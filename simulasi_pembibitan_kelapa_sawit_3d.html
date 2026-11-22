@@ -1,0 +1,2241 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Simulasi Pembibitan Kelapa Sawit 3D - Inovasi MPI SMK ATP</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js r128 untuk Dunia 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #022c22;
+            touch-action: manipulation;
+        }
+        #canvasContainer canvas {
+            display: block;
+            width: 100% !important;
+            height: 100% !important;
+            outline: none;
+        }
+        .world-label {
+            position: absolute;
+            transform: translate(-50%, -100%);
+            pointer-events: none;
+            white-space: nowrap;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.9);
+            transition: transform 0.08s ease-out;
+        }
+        .tool-btn-active {
+            transform: translateY(-5px) scale(1.07);
+            box-shadow: 0 0 0 3px #fbbf24, 0 12px 20px -4px rgba(0, 0, 0, 0.6);
+            background: linear-gradient(135deg, #059669, #047857) !important;
+        }
+        @keyframes pulseBadge {
+            0%, 100% { transform: translate(-50%, -100%) scale(1); }
+            50% { transform: translate(-50%, -112%) scale(1.12); }
+        }
+        .badge-bounce {
+            animation: pulseBadge 1.4s infinite ease-in-out;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #10b981;
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col bg-slate-950 text-white">
+
+    <!-- ======================== LAYAR PEMBUKA (START SCREEN) ======================== -->
+    <div id="startScreen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-emerald-950 via-teal-950 to-slate-950 overflow-y-auto">
+        <div class="max-w-xl w-full bg-slate-900/90 backdrop-blur-xl border-2 border-emerald-400/50 rounded-3xl p-6 sm:p-8 shadow-2xl text-center my-auto">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-xs font-bold mb-3">
+                <span>🏆 KARYA INOVASI MPI • GAMIFIKASI & GAME-BASED LEARNING 3D</span>
+            </div>
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-300 to-cyan-200 mb-2 leading-tight">
+                Simulasi Pembibitan Kelapa Sawit 3D
+            </h1>
+            <p class="text-slate-300 text-xs sm:text-sm mb-5 leading-relaxed">
+                Media Pembelajaran Interaktif 3D untuk SMK Agribisnis Tanaman Perkebunan (ATP). Kuasai <b>10 Babak Misi Praktik Lapangan</b> dari verifikasi benih bersertifikat hingga bibit siap salur umur 12 bulan!
+            </p>
+
+            <!-- Menu Informasi Standar Lomba MPI -->
+            <div class="grid grid-cols-3 gap-2.5 mb-5">
+                <button type="button" onclick="openInfoModal('cptp')" class="py-2.5 px-2 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-emerald-500/40 text-emerald-300 text-xs font-bold transition flex flex-col items-center justify-center gap-1">
+                    <span class="text-lg">🎯</span>
+                    <span>CP & Tujuan</span>
+                </button>
+                <button type="button" onclick="openInfoModal('guide')" class="py-2.5 px-2 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-amber-500/40 text-amber-300 text-xs font-bold transition flex flex-col items-center justify-center gap-1">
+                    <span class="text-lg">🎮</span>
+                    <span>Petunjuk 3D</span>
+                </button>
+                <button type="button" onclick="openInfoModal('about')" class="py-2.5 px-2 rounded-2xl bg-slate-800/90 hover:bg-slate-700 border border-sky-500/40 text-sky-300 text-xs font-bold transition flex flex-col items-center justify-center gap-1">
+                    <span class="text-lg">👨‍🏫</span>
+                    <span>Profil MPI</span>
+                </button>
+            </div>
+
+            <!-- Input Nama Siswa -->
+            <div class="mb-5 text-left bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+                <label for="playerNameInput" class="block text-xs font-bold text-emerald-300 uppercase tracking-wider mb-1.5">
+                    Nama Peserta Didik (Tercetak di Sertifikat):
+                </label>
+                <input id="playerNameInput" type="text" placeholder="Ketik nama lengkap & kelas..." value="Siswa ATP Kelas XI"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-emerald-500/50 text-white text-sm focus:outline-none focus:border-amber-400">
+            </div>
+
+            <button type="button" onclick="startGame()"
+                class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-slate-950 font-extrabold text-base sm:text-lg shadow-lg shadow-emerald-500/30 transition transform active:scale-95 cursor-pointer">
+                🚀 Mulai Simulasi Kebun 3D
+            </button>
+        </div>
+    </div>
+
+    <!-- ======================== HUD ATAS (STATUS, CUACA & KAMERA) ======================== -->
+    <header id="gameHUD" class="hidden z-20 bg-slate-900/95 backdrop-blur-md border-b border-emerald-500/30 px-3 py-2 flex flex-wrap items-center justify-between gap-2 shadow-lg">
+        <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-emerald-600/30 border border-emerald-400/50 flex items-center justify-center text-lg">🌴</div>
+            <div>
+                <div class="flex items-center gap-1.5">
+                    <span id="hudStage" class="text-xs sm:text-sm font-extrabold text-amber-300">Babak 1/10: Verifikasi Benih</span>
+                    <span id="hudMonth" class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold">Bulan ke-0</span>
+                </div>
+                <div class="text-[11px] text-slate-300 flex items-center gap-1.5">
+                    <span id="hudWeatherIcon">☀️</span>
+                    <span id="hudTimeText">Hari ke-1 • 07:30 Pagi</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-2.5">
+            <!-- Stamina -->
+            <div class="bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 min-w-[90px]">
+                <div class="flex justify-between text-[10px] font-bold mb-0.5">
+                    <span class="text-sky-300">⚡ Stamina</span>
+                    <span id="hudStaminaText" class="text-white">100%</span>
+                </div>
+                <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div id="hudStaminaBar" class="h-full bg-gradient-to-r from-sky-400 to-cyan-300 transition-all duration-300" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Mutu Bibit -->
+            <div class="bg-slate-800/90 px-2.5 py-1 rounded-xl border border-slate-700 min-w-[100px]">
+                <div class="flex justify-between text-[10px] font-bold mb-0.5">
+                    <span class="text-emerald-300">🌱 Mutu Bibit</span>
+                    <span id="hudQualityText" class="text-white">100%</span>
+                </div>
+                <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                    <div id="hudQualityBar" class="h-full bg-gradient-to-r from-emerald-400 to-lime-300 transition-all duration-300" style="width: 100%"></div>
+                </div>
+            </div>
+
+            <!-- Kontrol Cuaca Cerah / Hujan -->
+            <button type="button" id="weatherToggleBtn" onclick="toggleWeatherMode()" title="Atur Cuaca Cerah atau Hujan"
+                class="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/60 text-amber-200 text-xs font-bold flex items-center gap-1 transition">
+                <span id="weatherBtnIcon">☀️</span><span id="weatherBtnText" class="hidden sm:inline">Cerah</span>
+            </button>
+
+            <!-- Kontrol Sudut Kamera 3D -->
+            <button type="button" onclick="rotateCameraAngle()" title="Ganti Sudut Kamera 3D"
+                class="px-2.5 py-1.5 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/60 text-sky-300 text-xs font-bold flex items-center gap-1 transition">
+                <span>🎥</span><span class="hidden sm:inline">Kamera</span>
+            </button>
+
+            <!-- Buku Jurnal SOP -->
+            <button type="button" onclick="toggleSOPModal(true)" title="Buka Jurnal SOP"
+                class="px-2.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/60 text-emerald-300 text-xs font-bold flex items-center gap-1 transition">
+                <span>📖</span><span class="hidden sm:inline">SOP</span>
+            </button>
+
+            <!-- Audio -->
+            <button type="button" id="muteBtn" onclick="toggleAudio()" title="Suara Efek"
+                class="px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-xs font-bold transition">
+                🔊
+            </button>
+        </div>
+    </header>
+
+    <!-- ======================== BANNER MISI AKTIF ======================== -->
+    <div id="questBanner" class="hidden z-20 bg-emerald-950/95 border-b border-emerald-600/50 px-3 py-1.5 flex items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2 truncate">
+            <span class="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-extrabold text-[10px] uppercase shrink-0">Misi 10 Babak</span>
+            <span id="questText" class="text-emerald-100 font-semibold truncate">Temui Pak Budi untuk memulai praktik.</span>
+        </div>
+        <span id="questProgressBadge" class="px-2.5 py-0.5 rounded-full bg-slate-900 border border-emerald-400/50 text-amber-300 font-extrabold text-[11px] shrink-0">Babak 1/10</span>
+    </div>
+
+    <!-- ======================== KANVAS DUNIA 3D ======================== -->
+    <main class="relative flex-1 w-full h-full overflow-hidden bg-sky-900">
+        <div id="canvasContainer" class="w-full h-full cursor-pointer"></div>
+        <!-- Label Mengambang 3D -->
+        <div id="labelsOverlay" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+        <!-- Ransel Alat Agronomis -->
+        <div id="toolSelector" class="hidden absolute bottom-24 sm:bottom-5 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:gap-2 bg-slate-900/90 backdrop-blur-md p-2 rounded-2xl border border-emerald-500/40 shadow-2xl">
+            <button type="button" onclick="selectTool('water')" id="tool-water" class="tool-btn tool-btn-active flex flex-col items-center px-2.5 py-1.5 rounded-xl bg-slate-800 text-white transition">
+                <span class="text-lg">💧</span>
+                <span class="text-[10px] font-bold">Gembor</span>
+            </button>
+            <button type="button" onclick="selectTool('weed')" id="tool-weed" class="tool-btn flex flex-col items-center px-2.5 py-1.5 rounded-xl bg-slate-800 text-white transition">
+                <span class="text-lg">🌿</span>
+                <span class="text-[10px] font-bold">Siang Gulma</span>
+            </button>
+            <button type="button" onclick="selectTool('fertilizer')" id="tool-fertilizer" class="tool-btn flex flex-col items-center px-2.5 py-1.5 rounded-xl bg-slate-800 text-white transition">
+                <span class="text-lg">🧪</span>
+                <span class="text-[10px] font-bold">Pupuk NPK</span>
+            </button>
+            <button type="button" onclick="selectTool('spray')" id="tool-spray" class="tool-btn flex flex-col items-center px-2.5 py-1.5 rounded-xl bg-slate-800 text-white transition">
+                <span class="text-lg">🧴</span>
+                <span class="text-[10px] font-bold">Semprot</span>
+            </button>
+            <button type="button" onclick="selectTool('inspect')" id="tool-inspect" class="tool-btn flex flex-col items-center px-2.5 py-1.5 rounded-xl bg-slate-800 text-white transition">
+                <span class="text-lg">🔍</span>
+                <span class="text-[10px] font-bold">Afkir</span>
+            </button>
+        </div>
+
+        <!-- Kontrol Sentuh Mobile -->
+        <div id="mobileControls" class="hidden sm:hidden absolute bottom-3 left-3 right-3 z-20 flex items-end justify-between pointer-events-none">
+            <div class="grid grid-cols-3 gap-1 w-28 h-28 pointer-events-auto opacity-85">
+                <div></div>
+                <button type="button" ontouchstart="setKey('ArrowUp', true)" ontouchend="setKey('ArrowUp', false)" class="bg-slate-900/90 border border-emerald-400/50 rounded-xl flex items-center justify-center text-base active:bg-emerald-600">▲</button>
+                <div></div>
+                <button type="button" ontouchstart="setKey('ArrowLeft', true)" ontouchend="setKey('ArrowLeft', false)" class="bg-slate-900/90 border border-emerald-400/50 rounded-xl flex items-center justify-center text-base active:bg-emerald-600">◀</button>
+                <div class="bg-slate-800/60 rounded-xl"></div>
+                <button type="button" ontouchstart="setKey('ArrowRight', true)" ontouchend="setKey('ArrowRight', false)" class="bg-slate-900/90 border border-emerald-400/50 rounded-xl flex items-center justify-center text-base active:bg-emerald-600">▶</button>
+                <div></div>
+                <button type="button" ontouchstart="setKey('ArrowDown', true)" ontouchend="setKey('ArrowDown', false)" class="bg-slate-900/90 border border-emerald-400/50 rounded-xl flex items-center justify-center text-base active:bg-emerald-600">▼</button>
+                <div></div>
+            </div>
+            <button type="button" onclick="triggerAction()" class="pointer-events-auto px-4 py-3.5 rounded-2xl bg-amber-400 text-slate-950 font-extrabold text-xs shadow-xl active:scale-95 border-2 border-amber-200">
+                ⚡ Interaksi
+            </button>
+        </div>
+
+        <!-- Kotak Dialog Mandor Pak Budi -->
+        <div id="dialogModal" class="hidden absolute inset-x-3 bottom-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:bottom-6 sm:max-w-2xl sm:w-full z-30 bg-slate-900/95 backdrop-blur-lg border-2 border-amber-400/80 rounded-3xl p-4 sm:p-5 shadow-2xl">
+            <div class="flex items-start gap-3.5">
+                <div class="w-14 h-14 rounded-2xl bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-3xl shrink-0">👨‍🌾</div>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-extrabold text-amber-300 text-sm sm:text-base">Pak Budi (Mandor Pembibitan)</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">Instruksi Lapangan</span>
+                    </div>
+                    <p id="dialogText" class="text-slate-200 text-xs sm:text-sm leading-relaxed mb-3">Selamat datang di kebun pembibitan!</p>
+                    <div id="dialogActions" class="flex flex-wrap justify-end gap-2">
+                        <button type="button" onclick="closeDialog()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition">
+                            Siap Laksanakan! ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Umpan Balik Cepat -->
+        <div id="feedbackToast" class="hidden absolute top-4 left-1/2 -translate-x-1/2 z-40 max-w-md w-[92%] px-4 py-3 rounded-2xl shadow-2xl border text-xs sm:text-sm font-semibold flex items-center gap-3 transition-all">
+            <span id="feedbackIcon" class="text-xl">✅</span>
+            <div>
+                <div id="feedbackTitle" class="font-extrabold">Tepat Sekali!</div>
+                <div id="feedbackDesc" class="text-xs opacity-90">Tindakan sesuai SOP agronomi.</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ======================== MODAL SELEKSI KECAMBAH (BABAK 2) ======================== -->
+    <div id="seedSortModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+        <div class="max-w-lg w-full bg-slate-900 border-2 border-emerald-500/60 rounded-3xl p-5 sm:p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <span class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-extrabold">Babak 2/10 • Meja Sortasi Kecambah DxP</span>
+                <span id="seedCounter" class="text-xs font-bold text-slate-400">Sampel 1 / 5</span>
+            </div>
+            <h2 class="text-lg sm:text-xl font-extrabold text-white mb-2">Periksa Morfologi Kecambah Ini!</h2>
+
+            <div class="bg-slate-950 rounded-2xl p-4 border border-slate-800 flex flex-col items-center mb-4">
+                <canvas id="seedPreviewCanvas" width="240" height="140" class="rounded-xl bg-slate-900 border border-slate-700 mb-3"></canvas>
+                <p id="seedDescText" class="text-center text-xs sm:text-sm text-emerald-200 font-semibold"></p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" onclick="submitSeedChoice(true)" class="py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm shadow-lg transition active:scale-95">
+                    ✅ Kecambah Normal (Tanam)
+                </button>
+                <button type="button" onclick="submitSeedChoice(false)" class="py-3 px-4 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs sm:text-sm shadow-lg transition active:scale-95">
+                    ❌ Kecambah Abnormal (Afkir)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== MODAL PROSEDUR SOP (BABAK 1, 3, 4 & 6) ======================== -->
+    <div id="prepModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+        <div class="max-w-lg w-full bg-slate-900 border-2 border-amber-400/60 rounded-3xl p-5 sm:p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-2">
+                <span id="prepBadge" class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-extrabold">Prosedur SOP Pembibitan</span>
+                <span id="prepStepCounter" class="text-xs font-bold text-slate-400">Langkah 1 / 3</span>
+            </div>
+            <h2 id="prepTitle" class="text-lg sm:text-xl font-extrabold text-white mb-2">Judul Prosedur</h2>
+            <p id="prepDesc" class="text-xs sm:text-sm text-slate-300 mb-4 leading-relaxed"></p>
+            <div id="prepOptions" class="space-y-2.5"></div>
+        </div>
+    </div>
+
+    <!-- ======================== MODAL EVALUASI KELAYAKAN (BABAK 10) ======================== -->
+    <div id="quizModal" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+        <div class="max-w-xl w-full bg-slate-900 border-2 border-amber-400/70 rounded-3xl p-5 sm:p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-3">
+                <span class="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 text-xs font-extrabold">Babak 10/10 • Uji Kelayakan Bibit Siap Salur (12 Bulan)</span>
+                <span id="quizCounter" class="text-xs font-bold text-slate-400">Soal 1 / 4</span>
+            </div>
+            <h3 id="quizQuestion" class="text-base sm:text-lg font-extrabold text-white mb-4 leading-snug"></h3>
+            <div id="quizOptions" class="space-y-2.5"></div>
+        </div>
+    </div>
+
+    <!-- ======================== MODAL SERTIFIKAT KELULUSAN PKL ======================== -->
+    <div id="resultModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900">
+        <div class="max-w-lg w-full bg-slate-900 border-2 border-amber-400 rounded-3xl p-6 sm:p-8 shadow-2xl text-center">
+            <div class="text-5xl mb-2">🏆</div>
+            <span class="text-xs font-extrabold uppercase tracking-wider text-amber-300">Sertifikat Evaluasi Praktik Kerja Lapangan 3D</span>
+            <h2 id="resultTitle" class="text-2xl font-extrabold text-white mt-1 mb-1">Agronom Muda Terbaik!</h2>
+            <p id="resultStudentName" class="text-sm text-emerald-300 font-semibold mb-4">Siswa ATP Kelas XI</p>
+
+            <div class="bg-slate-800 rounded-2xl p-4 mb-5 border border-slate-700">
+                <div class="text-xs text-slate-400 uppercase font-bold">Indeks Kualitas Bibit Siap Salur (10 Babak Selesai)</div>
+                <div id="resultScore" class="text-4xl font-extrabold text-emerald-400 my-1">95%</div>
+                <p id="resultFeedback" class="text-xs text-slate-300 leading-relaxed mt-2"></p>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button type="button" onclick="downloadCertificate()" class="w-full py-3 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs sm:text-sm transition">
+                    📥 Unduh Sertifikat (PNG)
+                </button>
+                <button type="button" onclick="location.reload()" class="w-full py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs sm:text-sm transition">
+                    🔄 Mainkan Ulang Simulasi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================== MODAL INFO MPI (CP/TP, PETUNJUK, PROFIL) ======================== -->
+    <div id="infoModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+        <div class="max-w-xl w-full max-h-[85vh] flex flex-col bg-slate-900 border-2 border-emerald-400/60 rounded-3xl p-5 sm:p-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+                <h2 id="infoModalTitle" class="text-lg sm:text-xl font-extrabold text-emerald-300">Informasi Media</h2>
+                <button type="button" onclick="closeInfoModal()" class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 text-xs font-bold">Tutup ✕</button>
+            </div>
+            <div id="infoModalBody" class="overflow-y-auto space-y-3 text-xs sm:text-sm text-slate-200 pr-1 leading-relaxed"></div>
+        </div>
+    </div>
+
+    <!-- ======================== MODAL BUKU PANDUAN SOP ======================== -->
+    <div id="sopModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-sm">
+        <div class="max-w-xl w-full max-h-[85vh] flex flex-col bg-slate-900 border-2 border-amber-400/60 rounded-3xl p-5 sm:p-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+                <h2 class="text-lg sm:text-xl font-extrabold text-amber-300">📖 Buku Jurnal SOP Pembibitan Kelapa Sawit</h2>
+                <button type="button" onclick="toggleSOPModal(false)" class="px-3 py-1 rounded-xl bg-slate-800 hover:bg-rose-600 text-xs font-bold">Tutup ✕</button>
+            </div>
+            <div class="overflow-y-auto space-y-3 text-xs sm:text-sm text-slate-200 pr-1 leading-relaxed">
+                <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+                    <h3 class="font-bold text-emerald-300 mb-1">1. Verifikasi & Seleksi Kecambah (DxP)</h3>
+                    <p>Periksa keutuhan segel & sertifikat balai benih resmi. Kecambah normal memiliki <b>radikula</b> (calon akar, ujung agak tumpul berbulu halus) dan <b>plumula</b> (calon tunas runcing) yang tumbuh berlawanan arah 180°, berwarna putih gading segar, dan tidak berjamur.</p>
+                </div>
+                <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+                    <h3 class="font-bold text-emerald-300 mb-1">2. Media Tanam & Penanaman Baby Polybag</h3>
+                    <p>Gunakan tanah <i>topsoil</i> gembur ayakan dicampur pupuk dasar <i>Rock Phosphate</i> (RP). Tanam kecambah sedalam ±1,5–2 cm dengan posisi <b>radikula menghadap ke bawah</b> dan plumula ke atas.</p>
+                </div>
+                <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+                    <h3 class="font-bold text-emerald-300 mb-1">3. Pre-Nursery (Umur 0–3 Bulan) & Cuaca</h3>
+                    <p>Gunakan <i>baby polybag</i> di bawah naungan paranet (intensitas naungan 50–60%). Penyiraman dilakukan pagi dan sore hari saat cuaca cerah. Saat <b>hujan turun</b>, hentikan penyiraman gembor untuk mencegah <i>over-watering</i>.</p>
+                </div>
+                <div class="bg-slate-800/80 p-3.5 rounded-2xl border border-slate-700">
+                    <h3 class="font-bold text-emerald-300 mb-1">4. Transplanting & Main Nursery (Umur 3–12 Bulan)</h3>
+                    <p>Bibit berdaun 3–4 helai dipindah ke <i>large polybag</i> dengan jarak tanam <b>segitiga sama sisi 90 × 90 × 90 cm</b>. Lakukan pemupukan NPK rutin, pengendalian bercak daun <i>Curvularia</i>, serta seleksi ketat (<i>culling</i>) bibit kerdil (<i>stunted</i>) atau pucuk terpelintir (<i>twisted</i>).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =========================================================================
+           0. KONTEN MODAL INFORMASI STANDAR LOMBA MPI
+           ========================================================================= */
+        const MPI_INFO_CONTENT = {
+            cptp: {
+                title: "🎯 Capaian & Tujuan Pembelajaran (Kurikulum Merdeka)",
+                html: `
+                    <div class="bg-slate-800/90 p-3.5 rounded-2xl border border-emerald-500/30">
+                        <div class="text-xs font-bold text-emerald-300 uppercase mb-1">Capaian Pembelajaran (Fase F - Kelas XI ATP):</div>
+                        <p>Peserta didik mampu menerapkan teknik pembibitan tanaman perkebunan (kelapa sawit) mulai dari penyiapan bahan tanam, media tanam, pemeliharaan <i>Pre-Nursery</i> dan <i>Main Nursery</i>, pengendalian OPT, hingga seleksi/afkir bibit sesuai SOP.</p>
+                    </div>
+                    <div class="bg-slate-800/90 p-3.5 rounded-2xl border border-amber-500/30">
+                        <div class="text-xs font-bold text-amber-300 uppercase mb-1">Alur 10 Babak Misi Praktik 3D:</div>
+                        <ol class="list-decimal pl-5 space-y-1">
+                            <li><b>Verifikasi Benih Bersertifikat:</b> Pemeriksaan segel & dokumen resmi DxP (PPKS/Socfindo).</li>
+                            <li><b>Seleksi Kecambah DxP:</b> Identifikasi morfologi radikula & plumula normal vs abnormal.</li>
+                            <li><b>Media Tanam & Baby Polybag:</b> Pengayakan <i>topsoil</i> dan pupuk dasar <i>Rock Phosphate</i>.</li>
+                            <li><b>Penanaman Kecambah:</b> Teknik penanaman posisi radikula & kedalaman 1,5–2 cm.</li>
+                            <li><b>Pre-Nursery (0–3 Bulan):</b> Penyiraman & penyiangan gulma di bawah paranet 3D.</li>
+                            <li><b>Transplanting (Pindah Tanam):</b> Pemindahan ke <i>large polybag</i> segitiga sama sisi 90×90×90 cm.</li>
+                            <li><b>Pemupukan & Gulma (4–7 Bulan):</b> Pemupukan NPK berimbang & kebersihan piringan polybag.</li>
+                            <li><b>Pengendalian OPT (Hama & Penyakit):</b> Penanganan bercak daun <i>Curvularia</i> & kumbang malam.</li>
+                            <li><b>Culling Ketat (8–11 Bulan):</b> Seleksi akhir bibit kerdil, daun menggulung & pucuk terpelintir.</li>
+                            <li><b>Uji Kelayakan Bibit Siap Salur (12 Bulan):</b> Evaluasi kompetensi akhir agronomi kelapa sawit.</li>
+                        </ol>
+                    </div>
+                `
+            },
+            guide: {
+                title: "🎮 Petunjuk Bermain Dunia 3D",
+                html: `
+                    <div class="space-y-2.5">
+                        <p><b>1. Berjalan & Berinteraksi:</b> Klik langsung objek 3D (Pak Budi, Meja Kerja, Bak Tandon Air, Gudang Saprotan, atau Polybag) atau gunakan tombol <b>WASD / Panah + Spasi</b>.</p>
+                        <p><b>2. Kontrol Cuaca (☀️ Cerah / 🌧️ Hujan):</b> Klik tombol <b>Cuaca</b> di bar atas kapan saja untuk menurunkan hujan 3D atau mengembalikan cuaca cerah. Saat hujan turun, air hujan otomatis membasahi polybag kering!</p>
+                        <p><b>3. Kontrol Kamera 3D:</b> Klik tombol <b>🎥 Kamera</b> di pojok kanan atas untuk berpindah sudut pandang kebun 3D.</p>
+                        <p><b>4. Ransel Alat:</b> Gunakan 💧 <b>Gembor</b>, 🌿 <b>Siang Gulma</b>, 🧪 <b>Pupuk NPK</b>, 🧴 <b>Semprot</b>, dan 🔍 <b>Afkir</b> sesuai indikator ikon di atas bibit 3D.</p>
+                    </div>
+                `
+            },
+            about: {
+                title: "👨‍🏫 Profil Inovasi Media Pembelajaran Interaktif (MPI)",
+                html: `
+                    <div class="bg-slate-800/90 p-3.5 rounded-2xl border border-sky-500/30 space-y-2">
+                        <p><b>Judul Karya:</b> Simulasi Pembibitan Kelapa Sawit 3D (Praktik Kerja Lapangan Virtual)</p>
+                        <p><b>Subtema Lomba:</b> Gamifikasi & Pembelajaran Berbasis Gim (<i>Game-Based Learning</i>)</p>
+                        <p><b>Sasaran Pengguna:</b> Peserta Didik SMK Kelas XI — Agribisnis Tanaman Perkebunan (ATP)</p>
+                        <p><b>Teknologi:</b> WebGL 3D (Three.js), HTML5, Tailwind CSS, dan Web Audio Synthesizer.</p>
+                    </div>
+                `
+            }
+        };
+
+        function openInfoModal(key) {
+            const data = MPI_INFO_CONTENT[key];
+            if (!data) return;
+            document.getElementById('infoModalTitle').textContent = data.title;
+            document.getElementById('infoModalBody').innerHTML = data.html;
+            document.getElementById('infoModal').classList.remove('hidden');
+        }
+        function closeInfoModal() {
+            document.getElementById('infoModal').classList.add('hidden');
+        }
+
+        /* =========================================================================
+           1. AUDIO ENGINE (WEB AUDIO API)
+           ========================================================================= */
+        const AudioEngine = {
+            ctx: null,
+            muted: false,
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) this.ctx = new AudioCtx();
+                }
+                if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            playTone(freq, type, duration, vol = 0.12) {
+                if (this.muted || !this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            sfxSuccess() {
+                this.playTone(523.25, 'triangle', 0.12);
+                setTimeout(() => this.playTone(659.25, 'triangle', 0.12), 90);
+                setTimeout(() => this.playTone(783.99, 'triangle', 0.22), 180);
+            },
+            sfxError() {
+                this.playTone(220, 'sawtooth', 0.18, 0.1);
+                setTimeout(() => this.playTone(175, 'sawtooth', 0.25, 0.1), 130);
+            },
+            sfxWater() {
+                this.playTone(420, 'sine', 0.08, 0.08);
+                setTimeout(() => this.playTone(540, 'sine', 0.12, 0.08), 70);
+            }
+        };
+
+        function toggleAudio() {
+            AudioEngine.muted = !AudioEngine.muted;
+            document.getElementById('muteBtn').textContent = AudioEngine.muted ? '🔇' : '🔊';
+        }
+
+        /* =========================================================================
+           2. DATA PEMBELAJARAN AGRONOMI (10 BABAK LENGKAP)
+           ========================================================================= */
+        const CERT_STEPS = [
+            {
+                q: "Langkah 1: Apa langkah pertama saat menerima kotak pengiriman kecambah kelapa sawit dari balai benih?",
+                options: [
+                    "Memeriksa keutuhan segel kotak, label varietas DxP, dan sertifikat resmi asal benih (misal PPKS/Socfindo)",
+                    "Langsung merendam seluruh kotak kecambah di dalam kolam air selama 2 hari",
+                    "Menjemur kecambah di bawah terik matahari siang agar cepat hijau"
+                ],
+                answer: 0,
+                explanation: "Verifikasi sertifikat & segel benih wajib dilakukan untuk mencegah penggunaan benih ilegal (ilegitim) yang produksinya rendah."
+            },
+            {
+                q: "Langkah 2: Berapa lama maksimal kecambah unggul boleh disimpan di ruangan teduh sebelum ditanam ke baby polybag?",
+                options: [
+                    "Maksimal 3–5 hari setelah diterima dalam kondisi lembap dan sejuk (suhu ruang 22–27°C)",
+                    "Boleh disimpan hingga 6 bulan di dalam karung tertutup rapat",
+                    "Harus disimpan di dalam freezer lemari es selama 1 minggu"
+                ],
+                answer: 0,
+                explanation: "Penyimpanan terlalu lama menyebabkan radikula dan plumula memanjang berlebihan (etiolasi) dan mudah patah saat tanam."
+            },
+            {
+                q: "Langkah 3: Apa tujuan utama pencatatan nomor persilangan (cross number) pada papan blok pembibitan?",
+                options: [
+                    "Memudahkan penelusuran (traceability) genetik dan keseragaman pertumbuhan tiap batch bibit",
+                    "Hanya sebagai hiasan agar kebun terlihat ramai",
+                    "Supaya pekerja tidak perlu menyiram blok tersebut"
+                ],
+                answer: 0,
+                explanation: "Traceability varietas memudahkan evaluasi performa bibit di pembibitan maupun saat dipindah ke blok tanaman belum menghasilkan (TBM)."
+            }
+        ];
+
+        const SEED_SAMPLES = [
+            {
+                id: 1,
+                isNormal: true,
+                type: 'normal',
+                desc: "Radikula (akar) dan plumula (tunas) tumbuh lurus berlawanan arah 180°, berwarna putih gading segar.",
+                reason: "Benar! Kecambah varietas DxP ini normal dan siap ditanam di baby polybag."
+            },
+            {
+                id: 2,
+                isNormal: false,
+                type: 'twisted',
+                desc: "Radikula dan plumula tumbuh terpelintir / bengkok ke arah yang sama.",
+                reason: "Tepat! Kecambah terpelintir (twisted) akan menghasilkan bibit abnormal dan wajib diafkir."
+            },
+            {
+                id: 3,
+                isNormal: false,
+                type: 'fungus',
+                desc: "Permukaan biji kecambah diselimuti hifa jamur cokelat kehitaman dan ujung radikula membusuk.",
+                reason: "Bagus! Kecambah berjamur dapat menulari bedengan pembibitan sehingga harus dimusnahkan."
+            },
+            {
+                id: 4,
+                isNormal: true,
+                type: 'normal',
+                desc: "Plumula runcing mengarah ke atas dan radikula berbulu halus mengarah ke bawah dengan panjang ideal ±1,5 cm.",
+                reason: "Sangat tepat! Morfologi radikula-plumula sangat sehat dan vigor."
+            },
+            {
+                id: 5,
+                isNormal: false,
+                type: 'broken',
+                desc: "Ujung plumula patah akibat benturan saat pengiriman dan muncul tunas ganda kerdil.",
+                reason: "Benar! Plumula patah atau kembar abnormal tidak layak ditanam."
+            }
+        ];
+
+        const MEDIA_PREP_STEPS = [
+            {
+                q: "Langkah 1: Jenis tanah apa yang paling ideal untuk mengisi baby polybag pada tahap Pre-Nursery?",
+                options: [
+                    "Tanah lapisan atas (topsoil) yang gembur, bebas batu/akar, dan sudah diayak",
+                    "Tanah liat keras dari dasar parit tanpa diayak",
+                    "Pasir pantai murni tanpa campuran bahan organik"
+                ],
+                answer: 0,
+                explanation: "Topsoil ayakan menjamin aerasi dan drainase optimal bagi perkembangan radikula muda."
+            },
+            {
+                q: "Langkah 2: Pupuk dasar apa yang dicampurkan ke dalam media tanah sebelum kecambah ditanam?",
+                options: [
+                    "Pupuk fosfat alam / Rock Phosphate (RP) untuk merangsang perakaran awal",
+                    "Garam dapur kasar agar tanah tidak berjamur",
+                    "Pupuk Urea dosis tinggi 100 gram per baby polybag"
+                ],
+                answer: 0,
+                explanation: "Rock Phosphate (RP) melepaskan unsur P secara perlahan dan aman untuk akar kecambah yang sensitif."
+            },
+            {
+                q: "Langkah 3: Bagaimana kondisi media tanam di baby polybag sesaat sebelum kecambah ditanam?",
+                options: [
+                    "Disiram air hingga lembap merata (kapasitas lapang) 1 hari sebelum tanam",
+                    "Dibiarkan kering berdebu agar kecambah tidak tenggelam",
+                    "Direndam air hingga menggenang di permukaan polybag"
+                ],
+                answer: 0,
+                explanation: "Penyiraman awal memadatkan tanah secara alami dan menjaga kelembapan untuk kecambah."
+            }
+        ];
+
+        const PLANTING_STEPS = [
+            {
+                q: "Langkah 1: Bagaimana posisi yang benar saat meletakkan kecambah ke dalam lubang tanam baby polybag?",
+                options: [
+                    "Radikula (calon akar, ujung agak tumpul berbulu) menghadap ke BAWAH, plumula (calon tunas runcing) menghadap ke ATAS",
+                    "Plumula menghadap ke bawah agar tunas mencari air di dasar polybag",
+                    "Diletakkan miring di atas permukaan tanah tanpa ditutup tanah"
+                ],
+                answer: 0,
+                explanation: "Posisi radikula ke bawah dan plumula ke atas mencegah pertumbuhan bibit terbalik (geotropisme negatif)."
+            },
+            {
+                q: "Langkah 2: Berapa kedalaman penutupan tanah di atas kecambah yang baru ditanam di baby polybag?",
+                options: [
+                    "Ditutup tanah gembur setebal ±1,5 hingga 2 cm secara perlahan tanpa ditekan keras",
+                    "Ditimbun sedalam 12 cm lalu diinjak agar padat",
+                    "Dibiarkan terbuka seluruhnya terkena sinar matahari langsung"
+                ],
+                answer: 0,
+                explanation: "Penutupan tanah tipis ±1,5–2 cm melindungi kecambah dari kekeringan tanpa menghambat munculnya daun jarum."
+            },
+            {
+                q: "Langkah 3: Tindakan apa yang segera dilakukan setelah seluruh kecambah selesai ditanam di bedengan Pre-Nursery?",
+                options: [
+                    "Penyiraman halus menggunakan gembor berlubang halus (fine rose) dan pemasangan naungan paranet 50–60%",
+                    "Pemberian pupuk Urea 50 gram langsung di atas titik tumbuh kecambah",
+                    "Penyemprotan herbisida sistemik ke seluruh bedengan"
+                ],
+                answer: 0,
+                explanation: "Gembor berlubang halus menjaga butiran air tidak mengikis tanah penutup kecambah yang baru ditanam."
+            }
+        ];
+
+        const TRANSPLANT_STEPS = [
+            {
+                q: "Langkah 1: Pada umur dan kondisi morfologi bagaimana bibit Pre-Nursery siap dipindah ke Main Nursery?",
+                options: [
+                    "Umur ±3 bulan dengan jumlah daun 3–4 helai (daun lanset sempurna) dan sehat",
+                    "Umur 2 minggu saat masih berupa daun jarum",
+                    "Umur 10 bulan setelah batang mulai membesar"
+                ],
+                answer: 0,
+                explanation: "Pada umur 3 bulan (3–4 helai daun), perakaran sudah cukup kuat memegang bola tanah saat transplanting."
+            },
+            {
+                q: "Langkah 2: Bagaimana cara melepaskan baby polybag saat memindahkan bibit ke dalam lubang large polybag?",
+                options: [
+                    "Menyobek plastik baby polybag secara hati-hati dari samping/bawah agar bola tanah tidak pecah",
+                    "Menarik batang bibit ke atas dengan kuat hingga tercabut dari tanah",
+                    "Menanam bibit beserta plastik baby polybag utuh tanpa dilepas"
+                ],
+                answer: 0,
+                explanation: "Bola tanah yang pecah menyebabkan stres akar (transplanting shock) dan menghambat pertumbuhan bibit."
+            },
+            {
+                q: "Langkah 3: Bagaimana pola dan jarak tanam antar large polybag di blok Main Nursery?",
+                options: [
+                    "Pola segitiga sama sisi dengan jarak 90 × 90 × 90 cm agar tajuk mendapat sinar matahari merata",
+                    "Disusun berimpit rapat 10 × 10 cm agar hemat lahan",
+                    "Ditanam di dalam ruangan tertutup tanpa cahaya matahari"
+                ],
+                answer: 0,
+                explanation: "Jarak segitiga sama sisi 90×90×90 cm mencegah etiolasi (bibit meninggi kurus akibat berebut cahaya)."
+            }
+        ];
+
+        const FINAL_QUIZ = [
+            {
+                q: "1. Mengapa bibit kelapa sawit di tahap Pre-Nursery (0–3 bulan) wajib diberi naungan paranet?",
+                options: [
+                    "Melindungi bibit muda dari terik matahari langsung dan pukulan air hujan deras",
+                    "Supaya bibit tumbuh tinggi kurus tanpa klorofil",
+                    "Agar pupuk kimia tidak menguap ke udara"
+                ],
+                answer: 0
+            },
+            {
+                q: "2. Berapa jarak tanam standar antar large polybag pada fase Main Nursery (3–12 bulan)?",
+                options: [
+                    "Segitiga sama sisi 90 × 90 × 90 cm",
+                    "Persegi rapat 25 × 25 cm",
+                    "Baris tunggal 5 × 5 meter"
+                ],
+                answer: 0
+            },
+            {
+                q: "3. Apa ciri bibit abnormal pada Main Nursery yang wajib diafkir (culling)?",
+                options: [
+                    "Bibit kerdil (stunted), daun menggulung (rolled leaf), atau pucuk terpelintir (twisted)",
+                    "Pelepah membuka lebar membentuk sudut 45° dan berwarna hijau tua segar",
+                    "Bonggol batang membesar kokoh dan sehat"
+                ],
+                answer: 0
+            },
+            {
+                q: "4. Apa risiko terbesar jika bibit abnormal lolos ditanam ke kebun produksi (lapangan)?",
+                options: [
+                    "Tanaman tetap tidak produktif atau berbuah kecil selama 25 tahun siklus tanaman",
+                    "Tanaman akan berbuah dua kali lipat lebih cepat",
+                    "Tidak ada pengaruh karena bisa diperbaiki saat panen"
+                ],
+                answer: 0
+            }
+        ];
+
+        /* =========================================================================
+           3. STATE UTAMA GAME 3D (10 BABAK + KONTROL CUACA)
+           ========================================================================= */
+        const GameState = {
+            playerName: "Siswa ATP",
+            chapter: 1,
+            month: 0,
+            day: 1,
+            timeMinutes: 7 * 60 + 30,
+            weather: 'cerah',
+            stamina: 100,
+            qualityScore: 100,
+            selectedTool: 'water',
+            dialogOpen: false,
+            modalOpen: false,
+            seedIndex: 0,
+            seedCorrectCount: 0,
+            prepMode: 'cert',
+            prepIndex: 0,
+            quizIndex: 0,
+            cameraAngleIdx: 0,
+            player: {
+                x: -3.5,
+                z: -1.5,
+                targetX: null,
+                targetZ: null,
+                speed: 6.5,
+                walkPhase: 0,
+                pendingAction: null
+            },
+            mandor: { x: -5.5, z: -4.2 },
+            polybags: []
+        };
+
+        const Keys = {};
+        function setKey(k, val) { Keys[k] = val; }
+
+        /* =========================================================================
+           4. ENGINE 3D (THREE.JS SCENE, AWAN, TARGET RING, KARAKTER & BANGUNAN)
+           ========================================================================= */
+        let scene, camera, renderer, raycaster, mouseVec, hemiLight, dirLight;
+        let playerMesh, mandorMesh, sortTableMesh, paranetGroup, rainPoints, targetRingMesh;
+        let cloudMeshes = [];
+        let polybagMeshes = [];
+        let interactiveMeshes = [];
+
+        const CAMERA_OFFSETS = [
+            { x: 0, y: 15.5, z: 16.5 },
+            { x: 14.5, y: 14.5, z: 11.5 },
+            { x: -14.5, y: 14.5, z: 11.5 }
+        ];
+        let currentCamOffset = { ...CAMERA_OFFSETS[0] };
+
+        function initThreeJS() {
+            const container = document.getElementById('canvasContainer');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+            scene.fog = new THREE.FogExp2(0x87ceeb, 0.015);
+
+            camera = new THREE.PerspectiveCamera(44, container.clientWidth / container.clientHeight, 0.1, 120);
+            camera.position.set(GameState.player.x + currentCamOffset.x, currentCamOffset.y, GameState.player.z + currentCamOffset.z);
+            camera.lookAt(GameState.player.x, 0.5, GameState.player.z);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.innerHTML = '';
+            container.appendChild(renderer.domElement);
+
+            raycaster = new THREE.Raycaster();
+            mouseVec = new THREE.Vector2();
+
+            // Pencahayaan
+            hemiLight = new THREE.HemisphereLight(0xffffff, 0x365314, 0.75);
+            hemiLight.position.set(0, 25, 0);
+            scene.add(hemiLight);
+
+            dirLight = new THREE.DirectionalLight(0xfffbeb, 0.95);
+            dirLight.position.set(14, 24, 16);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            dirLight.shadow.camera.near = 1;
+            dirLight.shadow.camera.far = 65;
+            const d = 18;
+            dirLight.shadow.camera.left = -d;
+            dirLight.shadow.camera.right = d;
+            dirLight.shadow.camera.top = d;
+            dirLight.shadow.camera.bottom = -d;
+            scene.add(dirLight);
+
+            // Hamparan Rumput Kebun
+            const ground = new THREE.Mesh(
+                new THREE.PlaneGeometry(58, 58),
+                new THREE.MeshStandardMaterial({ color: 0x3f7d20, roughness: 0.9 })
+            );
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+
+            // Jalan Setapak Kebun
+            const pathMat = new THREE.MeshStandardMaterial({ color: 0xd6b88d, roughness: 0.95 });
+            const pathH = new THREE.Mesh(new THREE.PlaneGeometry(24, 2.4), pathMat);
+            pathH.rotation.x = -Math.PI / 2;
+            pathH.position.set(0, 0.02, -2.5);
+            pathH.receiveShadow = true;
+            scene.add(pathH);
+
+            const pathV = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 20), pathMat);
+            pathV.rotation.x = -Math.PI / 2;
+            pathV.position.set(-4.5, 0.02, 1.5);
+            pathV.receiveShadow = true;
+            scene.add(pathV);
+
+            // Bedengan Pembibitan
+            const nurseryBed = new THREE.Mesh(
+                new THREE.BoxGeometry(10.8, 0.14, 8.4),
+                new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.95 })
+            );
+            nurseryBed.position.set(3.2, 0.07, 2.5);
+            nurseryBed.receiveShadow = true;
+            scene.add(nurseryBed);
+
+            // Cincin Penanda Lokasi Klik di Tanah 3D
+            targetRingMesh = new THREE.Mesh(
+                new THREE.RingGeometry(0.32, 0.48, 24),
+                new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+            );
+            targetRingMesh.rotation.x = -Math.PI / 2;
+            targetRingMesh.position.y = 0.05;
+            targetRingMesh.visible = false;
+            scene.add(targetRingMesh);
+
+            build3DBuildingsAndTrees();
+            build3DClouds();
+
+            // Karakter 3D: Siswa PKL & Pak Budi
+            playerMesh = createCharacter3D(0x0284c7, 0xfacc15, false);
+            playerMesh.position.set(GameState.player.x, 0, GameState.player.z);
+            scene.add(playerMesh);
+
+            mandorMesh = createCharacter3D(0x15803d, 0xd97706, true);
+            mandorMesh.position.set(GameState.mandor.x, 0, GameState.mandor.z);
+            mandorMesh.userData = { interactType: 'mandor', x: GameState.mandor.x, z: GameState.mandor.z };
+            scene.add(mandorMesh);
+            interactiveMeshes.push(mandorMesh);
+
+            // Meja Sortasi & Kerja 3D
+            sortTableMesh = createSortTable3D();
+            sortTableMesh.position.set(1.5, 0, -2.5);
+            sortTableMesh.userData = { interactType: 'table', x: 1.5, z: -0.8 };
+            scene.add(sortTableMesh);
+            interactiveMeshes.push(sortTableMesh);
+
+            // Naungan Paranet 3D
+            paranetGroup = createParanet3D();
+            paranetGroup.visible = false;
+            scene.add(paranetGroup);
+
+            // Partikel Hujan 3D
+            const rainGeo = new THREE.BufferGeometry();
+            const rainCount = 700;
+            const rainPos = new Float32Array(rainCount * 3);
+            for (let i = 0; i < rainCount * 3; i += 3) {
+                rainPos[i] = (Math.random() - 0.5) * 36;
+                rainPos[i + 1] = Math.random() * 15;
+                rainPos[i + 2] = (Math.random() - 0.5) * 36;
+            }
+            rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+            const rainMat = new THREE.PointsMaterial({ color: 0xbae6fd, size: 0.16, transparent: true, opacity: 0.8 });
+            rainPoints = new THREE.Points(rainGeo, rainMat);
+            rainPoints.visible = false;
+            scene.add(rainPoints);
+
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('click', onCanvas3DClick);
+            applyWeatherEnvironment('cerah', true);
+        }
+
+        function build3DClouds() {
+            cloudMeshes = [];
+            const cloudMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, transparent: true, opacity: 0.88 });
+            for (let i = 0; i < 6; i++) {
+                const cloud = new THREE.Group();
+                const puff1 = new THREE.Mesh(new THREE.SphereGeometry(1.3, 12, 12), cloudMat);
+                const puff2 = new THREE.Mesh(new THREE.SphereGeometry(1.0, 12, 12), cloudMat);
+                puff2.position.set(1.1, -0.2, 0.2);
+                const puff3 = new THREE.Mesh(new THREE.SphereGeometry(0.95, 12, 12), cloudMat);
+                puff3.position.set(-1.1, -0.2, -0.1);
+                cloud.add(puff1, puff2, puff3);
+                cloud.position.set(-18 + i * 7, 13 + (i % 2) * 1.5, -14 + (i % 3) * 8);
+                scene.add(cloud);
+                cloudMeshes.push(cloud);
+            }
+        }
+
+        function toggleWeatherMode() {
+            const nextWeather = GameState.weather === 'cerah' ? 'hujan' : 'cerah';
+            applyWeatherEnvironment(nextWeather, false);
+        }
+
+        function applyWeatherEnvironment(mode, silent = false) {
+            GameState.weather = mode;
+            const isRain = (mode === 'hujan');
+
+            if (rainPoints) rainPoints.visible = isRain;
+            if (scene) {
+                const skyHex = isRain ? 0x475569 : 0x87ceeb;
+                scene.background = new THREE.Color(skyHex);
+                scene.fog = new THREE.FogExp2(skyHex, isRain ? 0.024 : 0.015);
+            }
+            if (hemiLight) hemiLight.intensity = isRain ? 0.48 : 0.75;
+            if (dirLight) dirLight.intensity = isRain ? 0.42 : 0.98;
+
+            cloudMeshes.forEach(c => {
+                c.children.forEach(p => {
+                    p.material.color.setHex(isRain ? 0x94a3b8 : 0xffffff);
+                });
+            });
+
+            const btn = document.getElementById('weatherToggleBtn');
+            const btnIcon = document.getElementById('weatherBtnIcon');
+            const btnText = document.getElementById('weatherBtnText');
+            if (btn && btnIcon && btnText) {
+                btnIcon.textContent = isRain ? '🌧️' : '☀️';
+                btnText.textContent = isRain ? 'Hujan' : 'Cerah';
+                btn.className = isRain
+                    ? "px-2.5 py-1.5 rounded-xl bg-sky-500/30 hover:bg-sky-500/40 border border-sky-400 text-sky-200 text-xs font-bold flex items-center gap-1 transition"
+                    : "px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/60 text-amber-200 text-xs font-bold flex items-center gap-1 transition";
+            }
+
+            if (isRain) {
+                let wateredByRain = 0;
+                GameState.polybags.forEach(pb => {
+                    if (!pb.culled && pb.needsWater) {
+                        pb.needsWater = false;
+                        if (pb.soilMesh) pb.soilMesh.material.color.setHex(0x44403c);
+                        wateredByRain++;
+                    }
+                });
+                if (wateredByRain > 0) updateNurseryProgress();
+                if (!silent) {
+                    AudioEngine.sfxWater();
+                    showFeedback('info', 'Cuaca Diubah: Hujan Turun 🌧️', wateredByRain > 0
+                        ? `Air hujan otomatis membasahi ${wateredByRain} polybag kering! Hindari menyiram dengan gembor saat hujan.`
+                        : 'Hujan turun membasahi kebun pembibitan 3D. Tidak perlu menyiram dengan gembor saat hujan.');
+                }
+            } else if (!silent) {
+                showFeedback('info', 'Cuaca Diubah: Cerah Berawan ☀️', 'Matahari bersinar cerah. Periksa kelembapan media polybag secara berkala.');
+            }
+            updateHUD();
+        }
+
+        function createCharacter3D(shirtColor, hatColor, isCaping) {
+            const group = new THREE.Group();
+            const matShirt = new THREE.MeshStandardMaterial({ color: shirtColor });
+            const matPants = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+            const matSkin = new THREE.MeshStandardMaterial({ color: 0xfdba74 });
+            const matHat = new THREE.MeshStandardMaterial({ color: hatColor });
+
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.7, 0.24), matPants);
+            leftLeg.position.set(-0.16, 0.35, 0);
+            leftLeg.castShadow = true;
+            group.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.7, 0.24), matPants);
+            rightLeg.position.set(0.16, 0.35, 0);
+            rightLeg.castShadow = true;
+            group.add(rightLeg);
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.85, 0.38), matShirt);
+            torso.position.set(0, 1.12, 0);
+            torso.castShadow = true;
+            group.add(torso);
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16), matSkin);
+            head.position.set(0, 1.85, 0);
+            head.castShadow = true;
+            group.add(head);
+
+            if (isCaping) {
+                const caping = new THREE.Mesh(new THREE.ConeGeometry(0.68, 0.38, 16), matHat);
+                caping.position.set(0, 2.18, 0);
+                caping.castShadow = true;
+                group.add(caping);
+            } else {
+                const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.36, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), matHat);
+                helmet.position.set(0, 1.92, 0);
+                helmet.castShadow = true;
+                group.add(helmet);
+            }
+
+            group.userData.leftLeg = leftLeg;
+            group.userData.rightLeg = rightLeg;
+            return group;
+        }
+
+        function build3DBuildingsAndTrees() {
+            const woodMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
+            const roofMat = new THREE.MeshStandardMaterial({ color: 0x991b1b });
+
+            // 1. Saung Mandor
+            const saung = new THREE.Group();
+            saung.position.set(-7.5, 0, -6.5);
+            const floor = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.3, 3.0), woodMat);
+            floor.position.y = 0.15;
+            floor.receiveShadow = true;
+            saung.add(floor);
+            [[-1.4, -1.2], [1.4, -1.2], [-1.4, 1.2], [1.4, 1.2]].forEach(([px, pz]) => {
+                const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 2.4), woodMat);
+                pillar.position.set(px, 1.3, pz);
+                pillar.castShadow = true;
+                saung.add(pillar);
+            });
+            const roof = new THREE.Mesh(new THREE.ConeGeometry(2.7, 1.3, 4), roofMat);
+            roof.position.y = 3.0;
+            roof.rotation.y = Math.PI / 4;
+            roof.castShadow = true;
+            saung.add(roof);
+            scene.add(saung);
+
+            // 2. Bak Tandon Air Irigasi
+            const well = new THREE.Group();
+            well.position.set(7.5, 0, -6.5);
+            const wall = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.3, 1.1, 16), new THREE.MeshStandardMaterial({ color: 0x64748b }));
+            wall.position.y = 0.55;
+            wall.castShadow = true;
+            well.add(wall);
+            const water = new THREE.Mesh(new THREE.CylinderGeometry(1.15, 1.15, 1.15, 16), new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.2 }));
+            water.position.y = 0.55;
+            well.add(water);
+            well.userData = { interactType: 'waterWell', x: 6.2, z: -4.8 };
+            scene.add(well);
+            interactiveMeshes.push(well);
+
+            // 3. Gudang Saprotan
+            const warehouse = new THREE.Group();
+            warehouse.position.set(-8.0, 0, 6.8);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.4, 3.2), new THREE.MeshStandardMaterial({ color: 0xd97706 }));
+            body.position.y = 1.2;
+            body.castShadow = true;
+            warehouse.add(body);
+            const wRoof = new THREE.Mesh(new THREE.ConeGeometry(3.0, 1.3, 4), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+            wRoof.position.y = 3.05;
+            wRoof.rotation.y = Math.PI / 4;
+            wRoof.castShadow = true;
+            warehouse.add(wRoof);
+            warehouse.userData = { interactType: 'warehouse', x: -5.6, z: 6.2 };
+            scene.add(warehouse);
+            interactiveMeshes.push(warehouse);
+
+            // 4. Pohon Kelapa Sawit Dewasa di Sekeliling Kebun
+            const palmPositions = [
+                [-12, -10], [-4, -12], [5, -12], [13, -10],
+                [-13, 0], [13, 0], [-12, 11], [2, 12], [12, 11]
+            ];
+            palmPositions.forEach(([tx, tz]) => {
+                const palm = new THREE.Group();
+                palm.position.set(tx, 0, tz);
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.55, 4.8, 8), new THREE.MeshStandardMaterial({ color: 0x57534e }));
+                trunk.position.y = 2.4;
+                trunk.castShadow = true;
+                palm.add(trunk);
+
+                const frondMat = new THREE.MeshStandardMaterial({ color: 0x15803d });
+                for (let a = 0; a < 8; a++) {
+                    const ang = (a / 8) * Math.PI * 2;
+                    const frond = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.12, 2.8), frondMat);
+                    frond.position.set(Math.sin(ang) * 1.3, 4.8, Math.cos(ang) * 1.3);
+                    frond.rotation.y = ang;
+                    frond.rotation.x = 0.35;
+                    frond.castShadow = true;
+                    palm.add(frond);
+                }
+                scene.add(palm);
+            });
+        }
+
+        function createSortTable3D() {
+            const g = new THREE.Group();
+            const top = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.16, 1.3), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
+            top.position.y = 0.95;
+            top.castShadow = true;
+            g.add(top);
+
+            [[-1.1, -0.5], [1.1, -0.5], [-1.1, 0.5], [1.1, 0.5]].forEach(([lx, lz]) => {
+                const leg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.95, 0.14), new THREE.MeshStandardMaterial({ color: 0x451a03 }));
+                leg.position.set(lx, 0.47, lz);
+                g.add(leg);
+            });
+
+            const tray = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.12, 0.7), new THREE.MeshStandardMaterial({ color: 0xfef3c7 }));
+            tray.position.set(0, 1.08, 0);
+            g.add(tray);
+            return g;
+        }
+
+        function createParanet3D() {
+            const g = new THREE.Group();
+            const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+            [[-1.8, -1.4], [8.2, -1.4], [-1.8, 6.4], [8.2, 6.4]].forEach(([px, pz]) => {
+                const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 3.0), poleMat);
+                pole.position.set(px, 1.5, pz);
+                g.add(pole);
+            });
+            const netMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, transparent: true, opacity: 0.42, side: THREE.DoubleSide });
+            const net = new THREE.Mesh(new THREE.PlaneGeometry(10.2, 8.0), netMat);
+            net.rotation.x = Math.PI / 2;
+            net.position.set(3.2, 2.95, 2.5);
+            g.add(net);
+            return g;
+        }
+
+        function create3DPolybagMesh(pb) {
+            const g = new THREE.Group();
+            g.position.set(pb.x, 0.14, pb.z);
+
+            const bagRadius = pb.isMainNursery ? 0.52 : 0.34;
+            const bagHeight = pb.isMainNursery ? 0.65 : 0.42;
+
+            const bag = new THREE.Mesh(
+                new THREE.CylinderGeometry(bagRadius, bagRadius * 0.92, bagHeight, 14),
+                new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 })
+            );
+            bag.position.y = bagHeight / 2;
+            bag.castShadow = true;
+            g.add(bag);
+
+            const soilColor = pb.needsWater ? 0xd97706 : 0x44403c;
+            const soil = new THREE.Mesh(
+                new THREE.CylinderGeometry(bagRadius * 0.94, bagRadius * 0.94, 0.06, 14),
+                new THREE.MeshStandardMaterial({ color: soilColor })
+            );
+            soil.position.y = bagHeight + 0.01;
+            g.add(soil);
+            pb.soilMesh = soil;
+
+            if (pb.hasWeed) {
+                const weed = new THREE.Mesh(
+                    new THREE.DodecahedronGeometry(0.16),
+                    new THREE.MeshStandardMaterial({ color: 0xa3e635 })
+                );
+                weed.position.set(bagRadius * 0.45, bagHeight + 0.12, 0.1);
+                g.add(weed);
+                pb.weedMesh = weed;
+            }
+
+            let leafHex = 0x16a34a;
+            let scaleY = pb.isMainNursery ? 1.45 : 0.85;
+            if (pb.abnormalType) {
+                leafHex = 0xeab308;
+                scaleY = 0.55;
+            } else if (pb.hasFungus) {
+                leafHex = 0xd97706;
+            }
+
+            const leafMat = new THREE.MeshStandardMaterial({ color: leafHex });
+            const frondCount = pb.isMainNursery ? 6 : 4;
+            for (let f = 0; f < frondCount; f++) {
+                const ang = (f / frondCount) * Math.PI * 2;
+                const frond = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.04, 0.78 * scaleY), leafMat);
+                frond.position.set(Math.sin(ang) * 0.34 * scaleY, bagHeight + 0.28 * scaleY, Math.cos(ang) * 0.34 * scaleY);
+                frond.rotation.y = ang;
+                frond.rotation.x = pb.abnormalType ? 0.85 : 0.42;
+                frond.castShadow = true;
+                g.add(frond);
+            }
+
+            g.userData = { interactType: 'polybag', polybag: pb };
+            scene.add(g);
+            pb.mesh = g;
+            polybagMeshes.push(g);
+            interactiveMeshes.push(g);
+        }
+
+        function rotateCameraAngle() {
+            GameState.cameraAngleIdx = (GameState.cameraAngleIdx + 1) % CAMERA_OFFSETS.length;
+            currentCamOffset = { ...CAMERA_OFFSETS[GameState.cameraAngleIdx] };
+            AudioEngine.sfxWater();
+            showFeedback('info', 'Sudut Kamera 3D Diubah', `Menampilkan sudut pandang kamera #${GameState.cameraAngleIdx + 1}.`);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvasContainer');
+            if (!container || !camera || !renderer) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function onCanvas3DClick(event) {
+            if (GameState.dialogOpen || GameState.modalOpen) return;
+            AudioEngine.init();
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouseVec.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseVec.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouseVec, camera);
+            const hits = raycaster.intersectObjects(interactiveMeshes, true);
+            if (hits.length > 0) {
+                let obj = hits[0].object;
+                while (obj && !obj.userData.interactType) obj = obj.parent;
+                if (obj && obj.userData.interactType) {
+                    const type = obj.userData.interactType;
+                    if (type === 'polybag') {
+                        const pb = obj.userData.polybag;
+                        setPlayerDestination(pb.x, pb.z + 1.1, () => handlePolybagInteraction(pb));
+                    } else {
+                        setPlayerDestination(obj.userData.x, obj.userData.z, () => executeWorldObjectInteraction(type));
+                    }
+                    return;
+                }
+            }
+
+            const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const pt = new THREE.Vector3();
+            raycaster.ray.intersectPlane(groundPlane, pt);
+            if (pt) {
+                const tx = Math.max(-10, Math.min(10, pt.x));
+                const tz = Math.max(-9, Math.min(9, pt.z));
+                setPlayerDestination(tx, tz, null);
+            }
+        }
+
+        function setPlayerDestination(tx, tz, callback) {
+            GameState.player.targetX = tx;
+            GameState.player.targetZ = tz;
+            GameState.player.pendingAction = callback;
+            if (targetRingMesh) {
+                targetRingMesh.position.set(tx, 0.05, tz);
+                targetRingMesh.visible = true;
+            }
+        }
+
+        /* =========================================================================
+           5. ALUR 10 BABAK MISI PEMBIBITAN KELAPA SAWIT
+           ========================================================================= */
+        function startGame() {
+            const inputName = document.getElementById('playerNameInput').value.trim();
+            if (inputName) GameState.playerName = inputName;
+
+            AudioEngine.init();
+            AudioEngine.sfxSuccess();
+
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameHUD').classList.remove('hidden');
+            document.getElementById('questBanner').classList.remove('hidden');
+            document.getElementById('mobileControls').classList.remove('hidden');
+
+            initThreeJS();
+            setupChapter(1);
+            requestAnimationFrame(gameLoop);
+        }
+
+        function clearPolybags3D() {
+            polybagMeshes.forEach(m => {
+                scene.remove(m);
+                const idx = interactiveMeshes.indexOf(m);
+                if (idx > -1) interactiveMeshes.splice(idx, 1);
+            });
+            polybagMeshes = [];
+            GameState.polybags = [];
+        }
+
+        function setupChapter(chap) {
+            GameState.chapter = chap;
+            clearPolybags3D();
+            paranetGroup.visible = false;
+            sortTableMesh.visible = [1, 2, 3, 4, 6].includes(chap);
+            updateHUD();
+
+            if (chap === 1) {
+                GameState.month = 0;
+                document.getElementById('toolSelector').classList.add('hidden');
+                updateQuest("Babak 1/10: Klik Meja Pemeriksaan untuk verifikasi sertifikat & segel kotak kecambah DxP.", "Langkah 1/3");
+                openMandorDialog(
+                    `Selamat datang di kebun pembibitan 3D, <b>${GameState.playerName}</b>! Kita akan menempuh <b>10 Babak Misi PKL Lengkap</b>. Mulai dari <b>Babak 1/10: Verifikasi Dokumen & Sertifikat Benih DxP</b> di meja kerja!`
+                );
+            } else if (chap === 2) {
+                GameState.month = 0;
+                document.getElementById('toolSelector').classList.add('hidden');
+                updateQuest("Babak 2/10: Klik Meja Sortasi 3D untuk menyortir 5 sampel morfologi kecambah DxP.", "0/5");
+                openMandorDialog(
+                    `Dokumen benih terverifikasi resmi! Sekarang masuk ke <b>Babak 2/10: Seleksi Morfologi Kecambah DxP</b>. Periksa radikula dan plumula pada 5 sampel kecambah di Meja Sortasi!`
+                );
+            } else if (chap === 3) {
+                GameState.month = 0;
+                document.getElementById('toolSelector').classList.add('hidden');
+                updateQuest("Babak 3/10: Klik Meja Media Tanam untuk meracik topsoil ayakan & pupuk dasar RP.", "Langkah 1/3");
+                openMandorDialog(
+                    `Kecambah normal sudah terpilih! Pada <b>Babak 3/10: Persiapan Media Tanam & Pengisian Baby Polybag</b>, klik meja kerja untuk menyiapkan tanah <i>topsoil</i> dan pupuk <i>Rock Phosphate</i>.`
+                );
+            } else if (chap === 4) {
+                GameState.month = 0;
+                document.getElementById('toolSelector').classList.add('hidden');
+                updateQuest("Babak 4/10: Klik Meja Tanam untuk prosedur penanaman kecambah ke baby polybag.", "Langkah 1/3");
+                openMandorDialog(
+                    `Media tanam sudah lembap sempurna! Kini masuk <b>Babak 4/10: Penanaman Kecambah ke Baby Polybag</b>. Pastikan posisi radikula dan kedalaman tanam sesuai SOP!`
+                );
+            } else if (chap === 5) {
+                GameState.month = 1;
+                paranetGroup.visible = true;
+                document.getElementById('toolSelector').classList.remove('hidden');
+                document.getElementById('tool-fertilizer').classList.add('hidden');
+                document.getElementById('tool-spray').classList.add('hidden');
+                document.getElementById('tool-inspect').classList.add('hidden');
+                selectTool('water');
+                createPolybags3D(6, false, 'prenursery');
+                updateQuest("Babak 5/10 (Pre-Nursery): Siram baby polybag kering (💧) & siangi gulma (🌿).", "0/6");
+                openMandorDialog(
+                    `Bibit kini berada di <b>Babak 5/10: Pemeliharaan Pre-Nursery (Bulan 1–3)</b> di bawah naungan paranet 3D! Siram tanah kering (💧) dan cabut gulma liar (🌿). Kamu juga bisa mengatur cuaca <b>Cerah/Hujan</b> di tombol atas!`
+                );
+            } else if (chap === 6) {
+                GameState.month = 3;
+                document.getElementById('toolSelector').classList.add('hidden');
+                updateQuest("Babak 6/10 (Transplanting): Klik Meja Pindah Tanam untuk memindahkan bibit ke Large Polybag.", "Langkah 1/3");
+                openMandorDialog(
+                    `Bibit berumur <b>3 bulan (3–4 helai daun)</b>! Laksanakan <b>Babak 6/10: Transplanting (Pindah Tanam)</b> dari <i>baby polybag</i> ke <i>large polybag</i> jarak segitiga sama sisi 90×90×90 cm.`
+                );
+            } else if (chap === 7) {
+                GameState.month = 5;
+                document.getElementById('toolSelector').classList.remove('hidden');
+                document.getElementById('tool-fertilizer').classList.remove('hidden');
+                document.getElementById('tool-spray').classList.add('hidden');
+                document.getElementById('tool-inspect').classList.add('hidden');
+                selectTool('fertilizer');
+                createPolybags3D(8, true, 'fert_weed');
+                updateQuest("Babak 7/10 (Main Nursery Awal): Pemupukan NPK (🧪), siram (💧) & penyiangan gulma (🌿).", "0/8");
+                openMandorDialog(
+                    `Selamat datang di <b>Babak 7/10: Pemupukan & Penyiangan Gulma Main Nursery (Bulan 4–7)</b>! Berikan <b>Pupuk NPK (🧪)</b> sesuai dosis, siram yang kering (💧), dan bersihkan gulma piringan (🌿).`
+                );
+            } else if (chap === 8) {
+                GameState.month = 8;
+                document.getElementById('toolSelector').classList.remove('hidden');
+                document.getElementById('tool-fertilizer').classList.remove('hidden');
+                document.getElementById('tool-spray').classList.remove('hidden');
+                document.getElementById('tool-inspect').classList.add('hidden');
+                selectTool('spray');
+                createPolybags3D(8, true, 'opt_control');
+                updateQuest("Babak 8/10 (Pengendalian OPT): Semprot bercak daun Curvularia & hama (🧴) serta siram (💧).", "0/8");
+                openMandorDialog(
+                    `Kelembapan kebun memicu serangan OPT! Di <b>Babak 8/10: Pengendalian Hama & Penyakit (Bulan 8)</b>, gunakan <b>Semprot (🧴)</b> pada bibit yang terserang bercak daun <i>Curvularia</i> (🍄) dan rawat bibit lainnya!`
+                );
+            } else if (chap === 9) {
+                GameState.month = 10;
+                document.getElementById('toolSelector').classList.remove('hidden');
+                document.getElementById('tool-fertilizer').classList.remove('hidden');
+                document.getElementById('tool-spray').classList.remove('hidden');
+                document.getElementById('tool-inspect').classList.remove('hidden');
+                selectTool('inspect');
+                createPolybags3D(9, true, 'culling_final');
+                updateQuest("Babak 9/10 (Culling Ketat): Afkir bibit abnormal genetis (🔍) & selesaikan perawatan akhir.", "0/9");
+                openMandorDialog(
+                    `Menjelang masa salur, kita masuk <b>Babak 9/10: Seleksi Ketat / Culling Akhir (Bulan 9–11)</b>! Gunakan alat <b>Afkir (🔍)</b> untuk memusnahkan seluruh bibit kerdil, daun menggulung, atau pucuk terpelintir (⚠️)!`
+                );
+            } else if (chap === 10) {
+                GameState.month = 12;
+                document.getElementById('toolSelector').classList.add('hidden');
+                updateQuest("Babak 10/10: Bibit berumur 12 bulan siap salur! Temui Pak Budi untuk Uji Kelayakan Akhir.", "Final");
+                openMandorDialog(
+                    `Luar biasa, <b>${GameState.playerName}</b>! Seluruh 9 tahapan lapangan telah kamu kuasai dan bibit kini berumur <b>12 bulan</b> siap salur. Selesaikan <b>Babak 10/10: Uji Kelayakan Bibit Siap Salur</b> untuk meraih sertifikatmu!`,
+                    `<button type="button" onclick="closeDialog(); openQuizModal();" class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm">Mulai Uji Kelayakan ➔</button>`
+                );
+            }
+        }
+
+        function createPolybags3D(count, isMainNursery, scenario = 'prenursery') {
+            const cols = 3;
+            const startX = 0.2;
+            const startZ = -0.2;
+            const gapX = isMainNursery ? 3.0 : 2.6;
+            const gapZ = isMainNursery ? 2.6 : 2.4;
+
+            for (let i = 0; i < count; i++) {
+                const r = Math.floor(i / cols);
+                const c = i % cols;
+                const stagger = (isMainNursery && r % 2 === 1) ? gapX * 0.45 : 0;
+
+                const pb = {
+                    id: i,
+                    x: startX + c * gapX + stagger,
+                    z: startZ + r * gapZ,
+                    isMainNursery,
+                    needsWater: false,
+                    hasWeed: false,
+                    needsFert: false,
+                    hasFungus: false,
+                    abnormalType: null,
+                    culled: false,
+                    mesh: null,
+                    soilMesh: null,
+                    weedMesh: null
+                };
+
+                if (scenario === 'prenursery') {
+                    if (i % 2 === 0 && GameState.weather !== 'hujan') pb.needsWater = true;
+                    else pb.hasWeed = true;
+                } else if (scenario === 'fert_weed') {
+                    if (i % 3 === 0) pb.needsFert = true;
+                    else if (i % 3 === 1) pb.hasWeed = true;
+                    else if (GameState.weather !== 'hujan') pb.needsWater = true;
+                    else pb.needsFert = true;
+                } else if (scenario === 'opt_control') {
+                    if (i % 2 === 0) pb.hasFungus = true;
+                    else if (GameState.weather !== 'hujan') pb.needsWater = true;
+                    else pb.needsFert = true;
+                } else if (scenario === 'culling_final') {
+                    if (i === 1 || i === 4 || i === 7) {
+                        const types = ["Kerdil (Stunted)", "Daun Menggulung (Rolled Leaf)", "Pucuk Terpelintir (Twisted)"];
+                        pb.abnormalType = types[i % 3];
+                    } else if (i === 2 || i === 6) {
+                        pb.hasFungus = true;
+                    } else if (i % 2 === 0) {
+                        pb.needsFert = true;
+                    } else {
+                        pb.hasWeed = true;
+                    }
+                }
+
+                GameState.polybags.push(pb);
+                create3DPolybagMesh(pb);
+            }
+        }
+
+        function updateNurseryProgress() {
+            let remaining = 0;
+            GameState.polybags.forEach(pb => {
+                if (pb.culled) return;
+                if (pb.abnormalType || pb.needsWater || pb.hasWeed || pb.needsFert || pb.hasFungus) {
+                    remaining++;
+                }
+            });
+            const total = GameState.polybags.length;
+            const done = total - remaining;
+            const questLabels = {
+                5: "Babak 5/10: Siram baby polybag kering (💧) & siangi gulma (🌿).",
+                7: "Babak 7/10: Pupuk NPK (🧪), siram (💧) & siangi gulma (🌿).",
+                8: "Babak 8/10: Semprot bercak daun Curvularia (🧴) & rawat bibit.",
+                9: "Babak 9/10: Afkir bibit abnormal (🔍) & selesaikan perawatan akhir."
+            };
+            updateQuest(
+                remaining === 0
+                    ? `Babak ${GameState.chapter}/10 selesai! Klik Pak Budi untuk melapor.`
+                    : (questLabels[GameState.chapter] || "Selesaikan perawatan bibit 3D."),
+                `${done}/${total}`
+            );
+            return remaining;
+        }
+
+        /* =========================================================================
+           6. MODAL INTERAKSI: SORTASI KECAMBAH, MEDIA, TRANSPLANTING & KUIS
+           ========================================================================= */
+        function openSeedSortModal() {
+            GameState.modalOpen = true;
+            GameState.seedIndex = 0;
+            GameState.seedCorrectCount = 0;
+            renderSeedSample();
+            document.getElementById('seedSortModal').classList.remove('hidden');
+        }
+
+        function renderSeedSample() {
+            const sample = SEED_SAMPLES[GameState.seedIndex];
+            document.getElementById('seedCounter').textContent = `Sampel ${GameState.seedIndex + 1} / ${SEED_SAMPLES.length}`;
+            document.getElementById('seedDescText').textContent = sample.desc;
+
+            const sc = document.getElementById('seedPreviewCanvas');
+            const sctx = sc.getContext('2d');
+            sctx.clearRect(0, 0, sc.width, sc.height);
+
+            sctx.fillStyle = '#0f172a';
+            sctx.fillRect(0, 0, sc.width, sc.height);
+
+            sctx.fillStyle = sample.type === 'fungus' ? '#451a03' : '#292524';
+            sctx.beginPath();
+            sctx.ellipse(120, 72, 22, 16, 0, 0, Math.PI * 2);
+            sctx.fill();
+            sctx.strokeStyle = '#78716c';
+            sctx.lineWidth = 2;
+            sctx.stroke();
+
+            if (sample.type === 'fungus') {
+                sctx.fillStyle = '#a3e635';
+                for (let i = 0; i < 6; i++) {
+                    sctx.beginPath();
+                    sctx.arc(108 + i * 5, 68 + (i % 2) * 8, 3, 0, Math.PI * 2);
+                    sctx.fill();
+                }
+            }
+
+            if (sample.type === 'normal') {
+                sctx.strokeStyle = '#fef08a';
+                sctx.lineWidth = 5;
+                sctx.beginPath();
+                sctx.moveTo(120, 56);
+                sctx.lineTo(120, 26);
+                sctx.stroke();
+
+                sctx.strokeStyle = '#f8fafc';
+                sctx.lineWidth = 6;
+                sctx.beginPath();
+                sctx.moveTo(120, 88);
+                sctx.lineTo(120, 122);
+                sctx.stroke();
+            } else if (sample.type === 'twisted') {
+                sctx.strokeStyle = '#fef08a';
+                sctx.lineWidth = 5;
+                sctx.beginPath();
+                sctx.moveTo(120, 56);
+                sctx.quadraticCurveTo(155, 35, 145, 75);
+                sctx.stroke();
+            } else {
+                sctx.strokeStyle = '#fb7185';
+                sctx.lineWidth = 4;
+                sctx.beginPath();
+                sctx.moveTo(120, 56);
+                sctx.lineTo(112, 42);
+                sctx.moveTo(124, 56);
+                sctx.lineTo(132, 44);
+                sctx.stroke();
+            }
+        }
+
+        function submitSeedChoice(choseNormal) {
+            const sample = SEED_SAMPLES[GameState.seedIndex];
+            const isCorrect = (choseNormal === sample.isNormal);
+
+            if (isCorrect) {
+                GameState.seedCorrectCount++;
+                AudioEngine.sfxSuccess();
+                showFeedback('success', 'Seleksi Tepat!', sample.reason);
+            } else {
+                modifyQuality(-6);
+                AudioEngine.sfxError();
+                showFeedback('error', 'Keliru (-6% Mutu)', sample.reason);
+            }
+
+            GameState.seedIndex++;
+            updateQuest("Babak 2/10: Seleksi kecambah DxP di Meja Sortasi.", `${GameState.seedIndex}/${SEED_SAMPLES.length}`);
+
+            if (GameState.seedIndex < SEED_SAMPLES.length) {
+                renderSeedSample();
+            } else {
+                document.getElementById('seedSortModal').classList.add('hidden');
+                GameState.modalOpen = false;
+                openMandorDialog(
+                    `Penyortiran selesai! Kamu menilai <b>${GameState.seedCorrectCount} dari ${SEED_SAMPLES.length}</b> kecambah dengan benar. Sekarang mari siapkan media tanam pada <b>Babak 3/10</b>!`,
+                    `<button type="button" onclick="closeDialog(); setupChapter(3);" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Lanjut ke Babak 3 ➔</button>`
+                );
+            }
+        }
+
+        function openPrepModal(mode) {
+            GameState.modalOpen = true;
+            GameState.prepMode = mode;
+            GameState.prepIndex = 0;
+            renderPrepStep();
+            document.getElementById('prepModal').classList.remove('hidden');
+        }
+
+        function getPrepStepsArray(mode) {
+            if (mode === 'cert') return CERT_STEPS;
+            if (mode === 'media') return MEDIA_PREP_STEPS;
+            if (mode === 'planting') return PLANTING_STEPS;
+            return TRANSPLANT_STEPS;
+        }
+
+        function renderPrepStep() {
+            const steps = getPrepStepsArray(GameState.prepMode);
+            const item = steps[GameState.prepIndex];
+            const badgeMap = {
+                cert: "Babak 1/10 • Verifikasi Sertifikat Benih DxP",
+                media: "Babak 3/10 • Media Tanam & Baby Polybag",
+                planting: "Babak 4/10 • Penanaman Kecambah ke Polybag",
+                transplant: "Babak 6/10 • Transplanting ke Large Polybag"
+            };
+            document.getElementById('prepBadge').textContent = badgeMap[GameState.prepMode];
+            document.getElementById('prepStepCounter').textContent = `Langkah ${GameState.prepIndex + 1} / ${steps.length}`;
+            document.getElementById('prepTitle').textContent = item.q;
+            document.getElementById('prepDesc').textContent = "Pilih prosedur agronomis yang paling sesuai dengan SOP pembibitan kelapa sawit:";
+
+            const optsDiv = document.getElementById('prepOptions');
+            optsDiv.innerHTML = '';
+            item.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-emerald-900/60 border border-slate-600 hover:border-emerald-400 text-xs sm:text-sm font-semibold text-white transition";
+                btn.textContent = `${String.fromCharCode(65 + idx)}. ${optText}`;
+                btn.onclick = () => submitPrepStep(idx);
+                optsDiv.appendChild(btn);
+            });
+        }
+
+        function submitPrepStep(chosenIdx) {
+            const steps = getPrepStepsArray(GameState.prepMode);
+            const item = steps[GameState.prepIndex];
+
+            if (chosenIdx === item.answer) {
+                AudioEngine.sfxSuccess();
+                showFeedback('success', 'Prosedur SOP Tepat!', item.explanation);
+            } else {
+                modifyQuality(-5);
+                AudioEngine.sfxError();
+                showFeedback('error', 'Kurang Tepat (-5% Mutu)', item.explanation);
+            }
+
+            GameState.prepIndex++;
+            if (GameState.prepIndex < steps.length) {
+                renderPrepStep();
+            } else {
+                document.getElementById('prepModal').classList.add('hidden');
+                GameState.modalOpen = false;
+                if (GameState.prepMode === 'cert') {
+                    openMandorDialog(
+                        `Verifikasi sertifikat & dokumen benih DxP tuntas! Sekarang kita masuk ke <b>Babak 2/10: Seleksi Morfologi Kecambah</b>.`,
+                        `<button type="button" onclick="closeDialog(); setupChapter(2);" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Lanjut ke Babak 2 ➔</button>`
+                    );
+                } else if (GameState.prepMode === 'media') {
+                    openMandorDialog(
+                        `Media tanam <i>topsoil</i> dan pupuk dasar <i>Rock Phosphate</i> sudah siap! Sekarang kita lanjut ke <b>Babak 4/10: Penanaman Kecambah</b>.`,
+                        `<button type="button" onclick="closeDialog(); setupChapter(4);" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Lanjut ke Babak 4 ➔</button>`
+                    );
+                } else if (GameState.prepMode === 'planting') {
+                    openMandorDialog(
+                        `Penanaman kecambah dengan posisi radikula ke bawah berhasil! Sekarang masuk ke <b>Babak 5/10: Pemeliharaan Pre-Nursery (Bulan 1–3)</b>.`,
+                        `<button type="button" onclick="closeDialog(); setupChapter(5);" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Lanjut ke Babak 5 ➔</button>`
+                    );
+                } else {
+                    openMandorDialog(
+                        `Proses <i>transplanting</i> ke <i>large polybag</i> pola segitiga sama sisi 90×90×90 cm berhasil! Sekarang kita masuk ke <b>Babak 7/10: Pemupukan & Penyiangan Main Nursery</b>.`,
+                        `<button type="button" onclick="closeDialog(); setupChapter(7);" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Lanjut ke Babak 7 ➔</button>`
+                    );
+                }
+            }
+        }
+
+        function openQuizModal() {
+            GameState.modalOpen = true;
+            GameState.quizIndex = 0;
+            renderQuizQuestion();
+            document.getElementById('quizModal').classList.remove('hidden');
+        }
+
+        function renderQuizQuestion() {
+            const item = FINAL_QUIZ[GameState.quizIndex];
+            document.getElementById('quizCounter').textContent = `Soal ${GameState.quizIndex + 1} / ${FINAL_QUIZ.length}`;
+            document.getElementById('quizQuestion').textContent = item.q;
+
+            const optsDiv = document.getElementById('quizOptions');
+            optsDiv.innerHTML = '';
+            item.options.forEach((optText, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = "w-full text-left p-3.5 rounded-xl bg-slate-800 hover:bg-emerald-900/60 border border-slate-600 hover:border-emerald-400 text-xs sm:text-sm font-semibold text-white transition";
+                btn.textContent = `${String.fromCharCode(65 + idx)}. ${optText}`;
+                btn.onclick = () => submitQuizAnswer(idx);
+                optsDiv.appendChild(btn);
+            });
+        }
+
+        function submitQuizAnswer(chosenIdx) {
+            const item = FINAL_QUIZ[GameState.quizIndex];
+            if (chosenIdx === item.answer) {
+                AudioEngine.sfxSuccess();
+                showFeedback('success', 'Jawaban Tepat!', 'Pemahaman SOP pembibitanmu sangat kuat.');
+            } else {
+                modifyQuality(-5);
+                AudioEngine.sfxError();
+                showFeedback('error', 'Kurang Tepat (-5% Mutu)', 'Periksa kembali standar teknis di Buku Jurnal SOP.');
+            }
+
+            GameState.quizIndex++;
+            if (GameState.quizIndex < FINAL_QUIZ.length) {
+                renderQuizQuestion();
+            } else {
+                document.getElementById('quizModal').classList.add('hidden');
+                showFinalCertificate();
+            }
+        }
+
+        function showFinalCertificate() {
+            const score = GameState.qualityScore;
+            document.getElementById('resultStudentName').textContent = `Nama Siswa: ${GameState.playerName} • Kelas XI ATP`;
+            document.getElementById('resultScore').textContent = `${score}%`;
+
+            let title = "Agronom Muda Teladan!";
+            let msg = "Luar biasa! Kamu menyelesaikan seluruh 10 Babak Praktik Pembibitan 3D dengan hasil sangat memuaskan. Bibit siap menghasilkan panen optimal selama 25 tahun!";
+            if (score < 85 && score >= 70) {
+                title = "Asisten Pembibitan Terampil";
+                msg = "Bagus! Sebagian besar bibit tumbuh sehat dan memenuhi standar salur, meski masih ada beberapa catatan ketelitian SOP.";
+            } else if (score < 70) {
+                title = "Perlu Pendalaman SOP Pembibitan";
+                msg = "Terus berlatih! Ingat bahwa ketelitian seleksi kecambah, pemupukan, dan culling bibit abnormal sangat menentukan produktivitas 25 tahun ke depan.";
+            }
+
+            document.getElementById('resultTitle').textContent = title;
+            document.getElementById('resultFeedback').textContent = msg;
+            document.getElementById('resultModal').classList.remove('hidden');
+        }
+
+        function downloadCertificate() {
+            const c = document.createElement('canvas');
+            c.width = 900;
+            c.height = 600;
+            const cx = c.getContext('2d');
+
+            const grad = cx.createLinearGradient(0, 0, 900, 600);
+            grad.addColorStop(0, '#064e3b');
+            grad.addColorStop(1, '#0f172a');
+            cx.fillStyle = grad;
+            cx.fillRect(0, 0, 900, 600);
+
+            cx.strokeStyle = '#fbbf24';
+            cx.lineWidth = 8;
+            cx.strokeRect(24, 24, 852, 552);
+
+            cx.textAlign = 'center';
+            cx.fillStyle = '#fde68a';
+            cx.font = 'bold 18px sans-serif';
+            cx.fillText('MEDIA PEMBELAJARAN INTERAKTIF 3D • AGRIBISNIS TANAMAN PERKEBUNAN', 450, 95);
+
+            cx.fillStyle = '#ffffff';
+            cx.font = 'bold 34px sans-serif';
+            cx.fillText('SERTIFIKAT KELULUSAN SIMULASI PKL (10 BABAK)', 450, 150);
+
+            cx.fillStyle = '#cbd5e1';
+            cx.font = '18px sans-serif';
+            cx.fillText('Diberikan kepada siswa praktik kerja lapangan:', 450, 210);
+
+            cx.fillStyle = '#34d399';
+            cx.font = 'bold 40px sans-serif';
+            cx.fillText(GameState.playerName.toUpperCase(), 450, 270);
+
+            cx.fillStyle = '#e2e8f0';
+            cx.font = '18px sans-serif';
+            cx.fillText('Telah menyelesaikan 10 Babak Simulasi Pembibitan Kelapa Sawit 3D', 450, 325);
+            cx.fillText('dengan capaian Indeks Mutu Bibit Siap Salur:', 450, 355);
+
+            cx.fillStyle = '#fbbf24';
+            cx.font = 'bold 64px sans-serif';
+            cx.fillText(`${GameState.qualityScore}%`, 450, 440);
+
+            cx.fillStyle = '#94a3b8';
+            cx.font = '14px sans-serif';
+            cx.fillText('Mandor Pembibitan: Pak Budi • Kurikulum Merdeka SMK Fase F (ATP)', 450, 530);
+
+            const link = document.createElement('a');
+            link.download = `Sertifikat_PKL_Sawit3D_${GameState.playerName.replace(/\s+/g, '_')}.png`;
+            link.href = c.toDataURL('image/png');
+            link.click();
+        }
+
+        /* =========================================================================
+           7. DIALOG, UI HELPER & INTERAKSI POLYBAG 3D
+           ========================================================================= */
+        function openMandorDialog(htmlText, customButtonsHtml = null) {
+            GameState.dialogOpen = true;
+            document.getElementById('dialogText').innerHTML = htmlText;
+            const actionsDiv = document.getElementById('dialogActions');
+            if (customButtonsHtml) {
+                actionsDiv.innerHTML = customButtonsHtml;
+            } else {
+                actionsDiv.innerHTML = `<button type="button" onclick="closeDialog()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition">Siap Laksanakan! ➔</button>`;
+            }
+            document.getElementById('dialogModal').classList.remove('hidden');
+        }
+
+        function closeDialog() {
+            GameState.dialogOpen = false;
+            document.getElementById('dialogModal').classList.add('hidden');
+        }
+
+        function toggleSOPModal(show) {
+            GameState.modalOpen = show;
+            document.getElementById('sopModal').classList.toggle('hidden', !show);
+        }
+
+        function selectTool(toolName) {
+            GameState.selectedTool = toolName;
+            document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('tool-btn-active'));
+            const activeBtn = document.getElementById(`tool-${toolName}`);
+            if (activeBtn) activeBtn.classList.add('tool-btn-active');
+        }
+
+        function updateQuest(text, badgeText) {
+            document.getElementById('questText').textContent = text;
+            document.getElementById('questProgressBadge').textContent = badgeText;
+        }
+
+        function modifyStamina(delta) {
+            GameState.stamina = Math.max(0, Math.min(100, GameState.stamina + delta));
+            updateHUD();
+        }
+
+        function modifyQuality(delta) {
+            GameState.qualityScore = Math.max(0, Math.min(100, GameState.qualityScore + delta));
+            document.getElementById('hudQualityText').textContent = `${GameState.qualityScore}%`;
+            document.getElementById('hudQualityBar').style.width = `${GameState.qualityScore}%`;
+        }
+
+        function updateHUD() {
+            const stageNames = {
+                1: "Babak 1/10: Verifikasi Benih",
+                2: "Babak 2/10: Seleksi Kecambah",
+                3: "Babak 3/10: Media Tanam",
+                4: "Babak 4/10: Tanam Kecambah",
+                5: "Babak 5/10: Pre-Nursery",
+                6: "Babak 6/10: Transplanting",
+                7: "Babak 7/10: Pemupukan NPK",
+                8: "Babak 8/10: Pengendalian OPT",
+                9: "Babak 9/10: Culling Ketat",
+                10: "Babak 10/10: Uji Kelayakan"
+            };
+            document.getElementById('hudStage').textContent = stageNames[GameState.chapter];
+            document.getElementById('hudMonth').textContent = `Bulan ke-${GameState.month}`;
+
+            const hrs = Math.floor(GameState.timeMinutes / 60) % 24;
+            const mins = Math.floor(GameState.timeMinutes % 60);
+            const period = hrs < 11 ? "Pagi" : (hrs < 15 ? "Siang" : "Sore");
+            document.getElementById('hudTimeText').textContent = `Hari ke-${GameState.day} • ${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')} ${period}`;
+            document.getElementById('hudWeatherIcon').textContent = GameState.weather === 'hujan' ? '🌧️' : '☀️';
+
+            document.getElementById('hudStaminaText').textContent = `${Math.round(GameState.stamina)}%`;
+            document.getElementById('hudStaminaBar').style.width = `${GameState.stamina}%`;
+        }
+
+        let feedbackTimer = null;
+        function showFeedback(type, title, desc) {
+            const toast = document.getElementById('feedbackToast');
+            const icon = document.getElementById('feedbackIcon');
+            document.getElementById('feedbackTitle').textContent = title;
+            document.getElementById('feedbackDesc').textContent = desc;
+
+            toast.className = "absolute top-4 left-1/2 -translate-x-1/2 z-40 max-w-md w-[92%] px-4 py-3 rounded-2xl shadow-2xl border text-xs sm:text-sm font-semibold flex items-center gap-3 transition-all ";
+            if (type === 'success') {
+                toast.className += "bg-emerald-950/95 border-emerald-400 text-emerald-100";
+                icon.textContent = "✅";
+            } else if (type === 'error') {
+                toast.className += "bg-rose-950/95 border-rose-400 text-rose-100";
+                icon.textContent = "⚠️";
+            } else {
+                toast.className += "bg-slate-900/95 border-amber-400 text-amber-100";
+                icon.textContent = "💡";
+            }
+
+            toast.classList.remove('hidden');
+            clearTimeout(feedbackTimer);
+            feedbackTimer = setTimeout(() => toast.classList.add('hidden'), 3200);
+        }
+
+        function executeWorldObjectInteraction(kind) {
+            if (kind === 'waterWell') {
+                modifyStamina(+35);
+                AudioEngine.sfxWater();
+                showFeedback('info', 'Bak Tandon Air Irigasi', 'Mengisi ulang gembor dan membasuh wajah! Stamina pulih (+35%).');
+                return;
+            }
+            if (kind === 'warehouse') {
+                modifyStamina(+40);
+                GameState.day += 1;
+                GameState.timeMinutes = 7 * 60 + 30;
+                AudioEngine.sfxSuccess();
+                updateHUD();
+                showFeedback('info', 'Istirahat di Gudang Saprotan', `Memasuki Hari ke-${GameState.day} pukul 07:30 Pagi! Stamina pulih (+40%).`);
+                return;
+            }
+            if (kind === 'table') {
+                AudioEngine.sfxSuccess();
+                if (GameState.chapter === 1) openPrepModal('cert');
+                else if (GameState.chapter === 2) openSeedSortModal();
+                else if (GameState.chapter === 3) openPrepModal('media');
+                else if (GameState.chapter === 4) openPrepModal('planting');
+                else if (GameState.chapter === 6) openPrepModal('transplant');
+                return;
+            }
+            if (kind === 'mandor') {
+                AudioEngine.sfxSuccess();
+                if (GameState.chapter === 1) {
+                    openPrepModal('cert');
+                } else if (GameState.chapter === 2) {
+                    openSeedSortModal();
+                } else if (GameState.chapter === 3) {
+                    openPrepModal('media');
+                } else if (GameState.chapter === 4) {
+                    openPrepModal('planting');
+                } else if ([5, 7, 8, 9].includes(GameState.chapter)) {
+                    const rem = updateNurseryProgress();
+                    if (rem === 0) {
+                        const nextChap = GameState.chapter + 1;
+                        openMandorDialog(
+                            `Kerja bagus, <b>${GameState.playerName}</b>! Semua bibit di blok ini sehat dan terawat sesuai SOP. Mari lanjut ke <b>Babak ${nextChap}/10</b>!`,
+                            `<button type="button" onclick="closeDialog(); setupChapter(${nextChap});" class="px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm">Lanjut ke Babak ${nextChap} ➔</button>`
+                        );
+                    } else {
+                        openMandorDialog(
+                            `Masih ada <b>${rem} tugas perawatan/seleksi</b> yang belum selesai di blok polybag 3D. Jika stamina lelah, beristirahatlah di <b>Gudang Saprotan</b> atau segarkan diri di <b>Bak Tandon Air</b>!`
+                        );
+                    }
+                } else if (GameState.chapter === 6) {
+                    openPrepModal('transplant');
+                } else if (GameState.chapter === 10) {
+                    openQuizModal();
+                }
+            }
+        }
+
+        function triggerAction() {
+            if (GameState.dialogOpen || GameState.modalOpen) return;
+            const p = GameState.player;
+
+            if (Math.hypot(p.x - GameState.mandor.x, p.z - GameState.mandor.z) < 2.6) {
+                executeWorldObjectInteraction('mandor');
+                return;
+            }
+            if (Math.hypot(p.x - 6.2, p.z - (-4.8)) < 2.8) {
+                executeWorldObjectInteraction('waterWell');
+                return;
+            }
+            if (Math.hypot(p.x - (-5.6), p.z - 6.2) < 2.8) {
+                executeWorldObjectInteraction('warehouse');
+                return;
+            }
+            if ([1, 2, 3, 4, 6].includes(GameState.chapter) && Math.hypot(p.x - 1.5, p.z - (-0.8)) < 3.0) {
+                executeWorldObjectInteraction('table');
+                return;
+            }
+            if ([5, 7, 8, 9].includes(GameState.chapter)) {
+                let nearest = null;
+                let minDist = 2.4;
+                GameState.polybags.forEach(pb => {
+                    if (pb.culled) return;
+                    const d = Math.hypot(p.x - pb.x, p.z - pb.z);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearest = pb;
+                    }
+                });
+                if (nearest) {
+                    handlePolybagInteraction(nearest);
+                    return;
+                }
+            }
+
+            showFeedback('info', 'Jelajahi Kebun 3D', 'Klik langsung Pak Budi, Meja Kerja, Bak Tandon Air, Gudang Saprotan, atau Polybag bibit sawit 3D!');
+        }
+
+        function handlePolybagInteraction(pb) {
+            if (GameState.stamina < 5) {
+                AudioEngine.sfxError();
+                showFeedback('error', 'Stamina Habis!', 'Kunjungi Bak Tandon Air atau Gudang Saprotan untuk memulihkan stamina.');
+                return;
+            }
+
+            const tool = GameState.selectedTool;
+            modifyStamina(-4);
+            GameState.timeMinutes += 12;
+
+            if (tool === 'inspect') {
+                if (pb.abnormalType) {
+                    pb.culled = true;
+                    if (pb.mesh) pb.mesh.visible = false;
+                    AudioEngine.sfxSuccess();
+                    showFeedback('success', `Bibit Abnormal Diafkir!`, `Bibit dengan gejala "${pb.abnormalType}" dimusnahkan sesuai SOP culling.`);
+                } else {
+                    AudioEngine.sfxError();
+                    modifyQuality(-8);
+                    showFeedback('error', 'Salah Afkir (-8% Mutu)!', 'Bibit ini tumbuh normal dan sehat! Jangan memusnahkan bibit unggul.');
+                }
+            } else if (pb.abnormalType) {
+                AudioEngine.sfxError();
+                showFeedback('error', 'Bibit Abnormal Genetis!', `Terdeteksi gejala "${pb.abnormalType}". Gunakan alat Afkir (🔍)!`);
+            } else if (tool === 'water') {
+                if (GameState.weather === 'hujan') {
+                    AudioEngine.sfxError();
+                    modifyQuality(-4);
+                    showFeedback('error', 'Sedang Hujan (-4% Mutu)', 'Saat hujan turun, media polybag sudah basah alami! Ubah cuaca ke Cerah (☀️) jika tidak hujan.');
+                } else if (pb.needsWater) {
+                    pb.needsWater = false;
+                    if (pb.soilMesh) pb.soilMesh.material.color.setHex(0x44403c);
+                    spawn3DParticles(pb.x, pb.z, 0x38bdf8);
+                    AudioEngine.sfxWater();
+                    showFeedback('success', 'Penyiraman Gembor Tepat!', 'Kelembapan tanah polybag terjaga optimal.');
+                } else {
+                    AudioEngine.sfxError();
+                    modifyQuality(-4);
+                    showFeedback('error', 'Over-watering (-4% Mutu)', 'Media polybag sudah cukup lembap! Penyiraman berlebih memicu busuk akar.');
+                }
+            } else if (tool === 'weed') {
+                if (pb.hasWeed) {
+                    pb.hasWeed = false;
+                    if (pb.weedMesh) pb.weedMesh.visible = false;
+                    spawn3DParticles(pb.x, pb.z, 0xa3e635);
+                    AudioEngine.sfxSuccess();
+                    showFeedback('success', 'Penyiangan Gulma Selesai!', 'Kompetisi hara di permukaan polybag berhasil dihilangkan.');
+                } else {
+                    AudioEngine.sfxError();
+                    showFeedback('info', 'Polybag Sudah Bersih', 'Tidak ada gulma yang perlu disiangi pada polybag ini.');
+                }
+            } else if (tool === 'fertilizer') {
+                if (pb.needsFert) {
+                    pb.needsFert = false;
+                    spawn3DParticles(pb.x, pb.z, 0xfbbf24);
+                    AudioEngine.sfxSuccess();
+                    showFeedback('success', 'Pemupukan NPK Tepat Dosis!', 'Pupuk ditabur melingkar di pinggir polybag tanpa mengenai pucuk.');
+                } else {
+                    AudioEngine.sfxError();
+                    modifyQuality(-5);
+                    showFeedback('error', 'Over-dosis Pupuk (-5% Mutu)', 'Bibit ini sudah dipupuk! Pupuk berlebih menyebabkan daun terbakar (leaf scorch).');
+                }
+            } else if (tool === 'spray') {
+                if (pb.hasFungus) {
+                    pb.hasFungus = false;
+                    if (pb.mesh) {
+                        pb.mesh.children.forEach(c => {
+                            if (c.geometry && c.geometry.type === 'BoxGeometry') {
+                                c.material.color.setHex(0x16a34a);
+                            }
+                        });
+                    }
+                    spawn3DParticles(pb.x, pb.z, 0xc084fc);
+                    AudioEngine.sfxSuccess();
+                    showFeedback('success', 'Pengendalian OPT Berhasil!', 'Bercak daun Curvularia & hama berhasil dikendalikan.');
+                } else {
+                    AudioEngine.sfxError();
+                    modifyQuality(-4);
+                    showFeedback('error', 'Penyemprotan Tidak Perlu (-4%)', 'Bibit ini sehat! Gunakan pestisida hanya jika ditemukan gejala serangan OPT.');
+                }
+            }
+
+            updateNurseryProgress();
+            updateHUD();
+        }
+
+        function spawn3DParticles(x, z, colorHex) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+            for (let i = 0; i < 10; i++) {
+                const p = new THREE.Mesh(new THREE.SphereGeometry(0.08), mat);
+                p.position.set(x + (Math.random() - 0.5) * 0.7, 0.8 + Math.random() * 0.6, z + (Math.random() - 0.5) * 0.7);
+                group.add(p);
+            }
+            scene.add(group);
+            setTimeout(() => scene.remove(group), 500);
+        }
+
+        /* =========================================================================
+           8. GAME LOOP 3D & PROYEKSI LABEL MENGAMBANG
+           ========================================================================= */
+        window.addEventListener('keydown', (e) => {
+            Keys[e.key] = true;
+            if (e.key === ' ' || e.key === 'Enter') {
+                if (GameState.dialogOpen) {
+                    const btn = document.querySelector('#dialogActions button');
+                    if (btn) btn.click();
+                } else if (!GameState.modalOpen) {
+                    triggerAction();
+                }
+            }
+        });
+        window.addEventListener('keyup', (e) => { Keys[e.key] = false; });
+
+        let lastTime = 0;
+        let hudClockAccum = 0;
+
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.1);
+            lastTime = timestamp;
+
+            updateMovement3D(dt);
+            updateFloatingLabels();
+
+            // Animasi Awan Bergerak di Langit 3D
+            cloudMeshes.forEach((c, idx) => {
+                c.position.x += (0.35 + idx * 0.05) * dt;
+                if (c.position.x > 22) c.position.x = -22;
+            });
+
+            // Animasi Cincin Target Klik
+            if (targetRingMesh && targetRingMesh.visible) {
+                targetRingMesh.rotation.z += 2.5 * dt;
+            }
+
+            hudClockAccum += dt;
+            if (hudClockAccum >= 2.0) {
+                GameState.timeMinutes += 5;
+                if (GameState.timeMinutes >= 17 * 60) {
+                    GameState.day += 1;
+                    GameState.timeMinutes = 7 * 60 + 30;
+                    showFeedback('info', `Hari ke-${GameState.day} Dimulai!`, 'Matahari pagi terbit di kebun pembibitan kelapa sawit 3D.');
+                }
+                updateHUD();
+                hudClockAccum = 0;
+            }
+
+            // Animasi Hujan 3D
+            if (rainPoints && rainPoints.visible) {
+                const pos = rainPoints.geometry.attributes.position.array;
+                for (let i = 1; i < pos.length; i += 3) {
+                    pos[i] -= 18 * dt;
+                    if (pos[i] < 0) pos[i] = 15;
+                }
+                rainPoints.geometry.attributes.position.needsUpdate = true;
+            }
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateMovement3D(dt) {
+            if (GameState.dialogOpen || GameState.modalOpen || !playerMesh) return;
+            const p = GameState.player;
+            let dx = 0, dz = 0;
+
+            if (Keys['ArrowUp'] || Keys['w'] || Keys['W']) dz -= 1;
+            if (Keys['ArrowDown'] || Keys['s'] || Keys['S']) dz += 1;
+            if (Keys['ArrowLeft'] || Keys['a'] || Keys['A']) dx -= 1;
+            if (Keys['ArrowRight'] || Keys['d'] || Keys['D']) dx += 1;
+
+            if (dx !== 0 || dz !== 0) {
+                p.targetX = null;
+                p.targetZ = null;
+                p.pendingAction = null;
+                if (targetRingMesh) targetRingMesh.visible = false;
+                const len = Math.hypot(dx, dz);
+                p.x += (dx / len) * p.speed * dt;
+                p.z += (dz / len) * p.speed * dt;
+                playerMesh.rotation.y = Math.atan2(dx, dz);
+                animateWalk3D(dt);
+            } else if (p.targetX !== null && p.targetZ !== null) {
+                const dist = Math.hypot(p.targetX - p.x, p.targetZ - p.z);
+                if (dist > 0.25) {
+                    const vx = (p.targetX - p.x) / dist;
+                    const vz = (p.targetZ - p.z) / dist;
+                    p.x += vx * p.speed * dt;
+                    p.z += vz * p.speed * dt;
+                    playerMesh.rotation.y = Math.atan2(vx, vz);
+                    animateWalk3D(dt);
+                } else {
+                    p.targetX = null;
+                    p.targetZ = null;
+                    if (targetRingMesh) targetRingMesh.visible = false;
+                    if (p.pendingAction) {
+                        const fn = p.pendingAction;
+                        p.pendingAction = null;
+                        fn();
+                    }
+                }
+            } else {
+                playerMesh.userData.leftLeg.rotation.x = 0;
+                playerMesh.userData.rightLeg.rotation.x = 0;
+            }
+
+            p.x = Math.max(-10, Math.min(10, p.x));
+            p.z = Math.max(-9, Math.min(9, p.z));
+            playerMesh.position.set(p.x, 0, p.z);
+
+            const desiredCamX = p.x + currentCamOffset.x;
+            const desiredCamY = currentCamOffset.y;
+            const desiredCamZ = p.z + currentCamOffset.z;
+            camera.position.x += (desiredCamX - camera.position.x) * 5 * dt;
+            camera.position.y += (desiredCamY - camera.position.y) * 5 * dt;
+            camera.position.z += (desiredCamZ - camera.position.z) * 5 * dt;
+            camera.lookAt(p.x, 0.7, p.z);
+        }
+
+        function animateWalk3D(dt) {
+            GameState.player.walkPhase += dt * 12;
+            const swing = Math.sin(GameState.player.walkPhase) * 0.55;
+            playerMesh.userData.leftLeg.rotation.x = swing;
+            playerMesh.userData.rightLeg.rotation.x = -swing;
+        }
+
+        function projectToScreen(x, y, z) {
+            const vec = new THREE.Vector3(x, y, z);
+            vec.project(camera);
+            const container = document.getElementById('canvasContainer');
+            return {
+                x: (vec.x * 0.5 + 0.5) * container.clientWidth,
+                y: (-vec.y * 0.5 + 0.5) * container.clientHeight,
+                visible: vec.z < 1
+            };
+        }
+
+        function updateFloatingLabels() {
+            const overlay = document.getElementById('labelsOverlay');
+            if (!overlay || !camera) return;
+            let html = '';
+
+            const pScr = projectToScreen(GameState.player.x, 2.55, GameState.player.z);
+            if (pScr.visible) {
+                html += `<div class="world-label px-2 py-0.5 rounded-full bg-slate-950/85 border border-emerald-400/60 text-emerald-300 text-[10px] font-bold" style="left:${pScr.x}px; top:${pScr.y}px;">🎓 ${GameState.playerName}</div>`;
+            }
+            const mScr = projectToScreen(GameState.mandor.x, 2.75, GameState.mandor.z);
+            if (mScr.visible) {
+                html += `<div class="world-label px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold shadow" style="left:${mScr.x}px; top:${mScr.y}px;">👨‍🌾 Pak Budi (!)</div>`;
+            }
+
+            const bLabels = [
+                { text: '🛖 Saung Mandor', x: -7.5, y: 4.1, z: -6.5 },
+                { text: '💧 Bak Tandon Air', x: 7.5, y: 2.1, z: -6.5 },
+                { text: '🏚️ Gudang Saprotan', x: -8.0, y: 4.4, z: 6.8 }
+            ];
+            if ([1, 2, 3, 4, 6].includes(GameState.chapter)) {
+                const tableLabelMap = {
+                    1: '📜 Meja Verifikasi Benih',
+                    2: '🌱 Meja Sortasi Kecambah',
+                    3: '🪴 Meja Media Tanam',
+                    4: '📥 Meja Tanam Kecambah',
+                    6: '🔄 Meja Transplanting'
+                };
+                bLabels.push({ text: tableLabelMap[GameState.chapter], x: 1.5, y: 1.85, z: -2.5 });
+            }
+            bLabels.forEach(bl => {
+                const s = projectToScreen(bl.x, bl.y, bl.z);
+                if (s.visible) {
+                    html += `<div class="world-label px-2 py-0.5 rounded-lg bg-slate-900/80 border border-slate-600 text-white text-[10px] font-bold" style="left:${s.x}px; top:${s.y}px;">${bl.text}</div>`;
+                }
+            });
+
+            GameState.polybags.forEach(pb => {
+                if (pb.culled) return;
+                let badge = '';
+                if (pb.abnormalType) badge = '⚠️';
+                else if (pb.hasFungus) badge = '🍄';
+                else if (pb.needsFert) badge = '🧪';
+                else if (pb.hasWeed) badge = '🌿';
+                else if (pb.needsWater) badge = '💧';
+
+                if (badge) {
+                    const s = projectToScreen(pb.x, 1.55, pb.z);
+                    if (s.visible) {
+                        html += `<div class="world-label badge-bounce w-6 h-6 rounded-full bg-slate-950/90 border border-amber-400 flex items-center justify-center text-xs shadow-lg" style="left:${s.x}px; top:${s.y}px;">${badge}</div>`;
+                    }
+                }
+            });
+
+            overlay.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
